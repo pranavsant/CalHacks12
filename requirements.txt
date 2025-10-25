@@ -1,0 +1,26 @@
+# FastAPI and web server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# AI/ML APIs
+anthropic==0.18.1
+
+# Plotting and visualization
+matplotlib==3.8.2
+numpy==1.26.3
+
+# HTTP requests
+requests==2.31.0
+
+# Image processing
+Pillow==10.2.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Optional: Letta Cloud integration (if available)
+# letta-client
+
+# Optional: Fetch.ai integration (if available)
+# fetchai
