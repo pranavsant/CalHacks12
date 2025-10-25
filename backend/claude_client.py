@@ -23,6 +23,28 @@ if not ANTHROPIC_API_KEY:
 CLAUDE_MODEL = "claude-sonnet-4-5-20250929"
 
 
+def strip_markdown_json(text: str) -> str:
+    """
+    Strip markdown code block markers from JSON responses.
+
+    Claude sometimes wraps JSON in ```json ... ``` markers.
+    This function removes those markers to get the raw JSON.
+    """
+    text = text.strip()
+
+    # Remove opening ```json or ```
+    if text.startswith("```json"):
+        text = text[7:]  # Remove ```json
+    elif text.startswith("```"):
+        text = text[3:]  # Remove ```
+
+    # Remove closing ```
+    if text.endswith("```"):
+        text = text[:-3]
+
+    return text.strip()
+
+
 def get_client() -> anthropic.Anthropic:
     """Get or create an Anthropic client instance."""
     if not ANTHROPIC_API_KEY:
@@ -85,8 +107,9 @@ The complexity should be rated 1-5, where:
         content = response.content[0].text
         logger.info(f"Claude interpretation response: {content}")
 
-        # Parse the JSON response
-        interpretation = json.loads(content)
+        # Strip markdown code blocks if present and parse the JSON response
+        clean_content = strip_markdown_json(content)
+        interpretation = json.loads(clean_content)
 
         # Validate required fields
         required_fields = ["description", "components", "symmetry", "complexity"]
@@ -175,7 +198,7 @@ Output only the JSON, no other text."""
     try:
         response = client.messages.create(
             model=CLAUDE_MODEL,
-            max_tokens=1500,
+            max_tokens=4096,  # Increased to handle complex shapes with many curves
             temperature=0.2,  # Slight temperature for creativity in curve generation
             system=system_message,
             messages=[
@@ -186,8 +209,9 @@ Output only the JSON, no other text."""
         content = response.content[0].text
         logger.info(f"Claude equation generation response: {content}")
 
-        # Parse the JSON response
-        equations = json.loads(content)
+        # Strip markdown code blocks if present and parse the JSON response
+        clean_content = strip_markdown_json(content)
+        equations = json.loads(clean_content)
 
         # Validate the structure
         if "curves" not in equations or not isinstance(equations["curves"], list):
@@ -278,7 +302,7 @@ Output only the JSON, no other text."""
     try:
         response = client.messages.create(
             model=CLAUDE_MODEL,
-            max_tokens=1500,
+            max_tokens=4096,  # Increased to handle complex shapes with many curves
             temperature=0.1,  # Low temperature for precise modifications
             system=system_message,
             messages=[
@@ -289,8 +313,9 @@ Output only the JSON, no other text."""
         content = response.content[0].text
         logger.info(f"Claude refinement response: {content}")
 
-        # Parse the JSON response
-        refined_equations = json.loads(content)
+        # Strip markdown code blocks if present and parse the JSON response
+        clean_content = strip_markdown_json(content)
+        refined_equations = json.loads(clean_content)
 
         # Validate the structure
         if "curves" not in refined_equations or not isinstance(refined_equations["curves"], list):

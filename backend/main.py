@@ -5,18 +5,19 @@ FastAPI Main Application - Entry point for the Parametric Curve Drawing System A
 import os
 import logging
 import tempfile
+from dotenv import load_dotenv
+
+# Load environment variables FIRST before importing any backend modules
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
-from dotenv import load_dotenv
 
 from . import pipeline
-
-# Load environment variables
-load_dotenv()
 
 # Set up logging
 logging.basicConfig(

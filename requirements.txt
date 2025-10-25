@@ -4,17 +4,17 @@ uvicorn[standard]==0.27.0
 python-multipart==0.0.6
 
 # AI/ML APIs
-anthropic==0.18.1
+anthropic>=0.71.0
 
 # Plotting and visualization
-matplotlib==3.8.2
-numpy==1.26.3
+matplotlib>=3.9.0
+numpy>=1.26.4
 
 # HTTP requests
 requests==2.31.0
 
 # Image processing
-Pillow==10.2.0
+Pillow>=10.3.0
 
 # Environment variables
 python-dotenv==1.0.0
