@@ -284,14 +284,16 @@ def render_relative_program(
                 )
 
                 # Determine color (skip if pen is up)
-                color = segment.pen.color
+                # With PenSpec normalization, color is guaranteed to be one of:
+                # "none", "#000000", or "#0000FF"
+                color = segment.pen.color or "#000000"
                 if color.lower() == "none":
                     logger.info(f"Skipping segment '{segment.name}' (pen up)")
                     # Still update pose even if not drawing
                 else:
-                    # Plot this segment
+                    # Plot this segment (color is guaranteed to be #000000 or #0000FF)
                     ax.plot(x_global, y_global, color=color, linewidth=2, label=segment.name)
-                    logger.info(f"Plotted relative segment '{segment.name}'")
+                    logger.info(f"Plotted relative segment '{segment.name}' with color {color}")
 
                 # Update current pose for next segment
                 # Evaluate the relative segment at t_max to get local end point

@@ -37,6 +37,11 @@ wheels/
 static/*.png
 static/*.jpg
 static/*.jpeg
+!static/.gitkeep
+
+# Exported json files
+exports/*.json
+!exports/.gitkeep
 
 # Logs
 *.log

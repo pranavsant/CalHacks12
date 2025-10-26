@@ -3,7 +3,7 @@ Pydantic schemas for the Parametric Curve Drawing System.
 Defines the data models for requests, responses, and internal data structures.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Literal, Dict, Any, Union
 
 
@@ -23,9 +23,27 @@ class AbsoluteCurves(BaseModel):
 
 
 class PenSpec(BaseModel):
-    """Pen specification for drawing a curve segment."""
-    # color: hex or named color; "none" means pen up (no drawing, just move)
-    color: str = Field(..., description='Use "none" to lift pen; otherwise hex color like "#FF4500"')
+    """
+    Pen specification for drawing a curve segment.
+
+    Colors are automatically normalized to one of three values:
+    - "none" (pen up, no drawing)
+    - "#000000" (black, pen down)
+    - "#0000FF" (blue, pen down)
+
+    All other colors are mapped to the nearest of black or blue.
+    """
+    color: Literal["none", "#000000", "#0000FF"] = Field(
+        ...,
+        description='Drawing color: "none" for pen up, "#000000" for black, "#0000FF" for blue'
+    )
+
+    @field_validator("color", mode="before")
+    @classmethod
+    def _normalize_color(cls, v):
+        """Normalize any color input to one of: none, #000000, #0000FF"""
+        from .color_utils import normalize_draw_color
+        return normalize_draw_color(v)
 
 
 class RelativeCurveDef(BaseModel):

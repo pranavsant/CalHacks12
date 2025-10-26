@@ -127,7 +127,7 @@ Content-Type: application/json
         "y": "0.5*sin(2*t)",
         "t_min": 0,
         "t_max": 6.283185307179586,
-        "color": "#FF4500"
+        "color": "#FF4500"  // Note: Original color from Claude (for reference only)
       }
     ]
   },
@@ -140,7 +140,7 @@ Content-Type: application/json
         "t_min": 0.0,
         "t_max": 6.283185307179586,
         "pen": {
-          "color": "#FF4500"
+          "color": "#000000"  // Normalized: #FF4500 (orange-red) → #000000 (black)
         }
       }
     ]
@@ -205,7 +205,7 @@ curl http://your-server:8000/robot/abc123...
         "y_rel": "0.00000000 * ( (cos(t) + 1) - 0.00000000 ) + ...",
         "t_min": 0.0,
         "t_max": 6.28318531,
-        "pen": {"color": "#FF4500"}
+        "pen": {"color": "#000000"}  // Normalized to black or blue
       }
     ]
   }
@@ -447,10 +447,25 @@ for segment in relative_program.segments:
 
 #### Pen Control
 
-- **`color: "#RRGGBB"`** - Hex color code, pen down
-- **`color: "none"`** - Pen up (travel move, no drawing)
-- Default for drawing segments: `"#000000"` (black)
-- Default for travel segments: `"none"`
+**Automatic Color Normalization:**
+
+All pen colors are automatically normalized to exactly one of three values:
+- **`"none"`** - Pen up (travel move, no drawing)
+- **`"#000000"`** - Black (pen down, drawing)
+- **`"#0000FF"`** - Blue (pen down, drawing)
+
+**Color Mapping:**
+- Any input color is mapped to the nearest of black or blue using RGB distance
+- Example: `#FF0000` (red) → `#000000` (black)
+- Example: `#4169E1` (royal blue) → `#0000FF` (blue)
+- Example: `#00FFFF` (cyan) → `#0000FF` (blue)
+
+**Defaults:**
+- Drawing segments without explicit color: `"#000000"` (black)
+- Travel segments (disconnected curves): `"none"` (pen up)
+- Invalid/missing colors: `"#000000"` (black)
+
+This restriction ensures compatibility with dual-pen robot systems that support only black and blue inks.
 
 ### Robot Fetch API
 

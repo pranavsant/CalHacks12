@@ -64,9 +64,11 @@ def test_absolute_curves_valid():
 
 
 def test_pen_spec_with_color():
-    """Test that PenSpec validates with a color."""
+    """Test that PenSpec normalizes colors."""
+    from backend.color_utils import BLUE
     pen = PenSpec(color="#ABCDEF")
-    assert pen.color == "#ABCDEF"
+    # #ABCDEF (light blue) normalizes to blue
+    assert pen.color == BLUE
 
 
 def test_pen_spec_with_none():
@@ -76,7 +78,8 @@ def test_pen_spec_with_none():
 
 
 def test_relative_curve_def_valid():
-    """Test that RelativeCurveDef validates correctly."""
+    """Test that RelativeCurveDef validates and normalizes colors."""
+    from backend.color_utils import BLACK
     rel_curve = RelativeCurveDef(
         name="rel_segment",
         x_rel="0.5 * t",
@@ -89,7 +92,8 @@ def test_relative_curve_def_valid():
     assert rel_curve.name == "rel_segment"
     assert rel_curve.x_rel == "0.5 * t"
     assert rel_curve.y_rel == "0.5 * t"
-    assert rel_curve.pen.color == "#FF4500"
+    # #FF4500 (orange-red) normalizes to black
+    assert rel_curve.pen.color == BLACK
 
 
 def test_relative_program_valid():
@@ -255,13 +259,15 @@ def test_draw_result_from_pipeline_format():
     }
 
     # This should validate without error
+    from backend.color_utils import BLACK
     result = DrawResult(**pipeline_output)
 
     assert result.success is True
     assert result.prompt == "Draw a butterfly"
     assert result.relative_program is not None
     assert len(result.relative_program.segments) == 1
-    assert result.relative_program.segments[0].pen.color == "#FF4500"
+    # #FF4500 (orange-red) normalizes to black
+    assert result.relative_program.segments[0].pen.color == BLACK
 
 
 def test_invalid_relative_curve_missing_field():

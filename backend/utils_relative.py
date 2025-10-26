@@ -153,12 +153,14 @@ def wrap_to_relative(
         )
 
         # Determine pen color
+        # The PenSpec validator will automatically normalize the color
+        # to one of: "none", "#000000", or "#0000FF"
         if curve.color:
             pen_color = curve.color
         elif default_color:
             pen_color = default_color
         else:
-            # Default to black for drawing, unless explicitly "none"
+            # Default to black for drawing
             pen_color = "#000000"
 
         pen_spec = PenSpec(color=pen_color)

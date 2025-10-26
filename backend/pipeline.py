@@ -247,6 +247,7 @@ class Pipeline:
                         current_pose = travel_end_pose
 
                 # Transform the actual drawing curve to relative frame
+                # Note: PenSpec validator will normalize the color to black/blue/none
                 default_color = curve.color if curve.color else "#000000"
                 relative_segment = utils_relative.wrap_to_relative(
                     prev_pose=current_pose,
