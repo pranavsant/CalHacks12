@@ -116,9 +116,9 @@ def wrap_to_relative(
     Returns:
         A RelativeCurveDef with x_rel(t) and y_rel(t) expressions as strings.
 
-    The returned expressions are of the form:
-        x_rel(t) =  cos(A) * ( (x_orig(t)) - x_end_prev ) + sin(A) * ( (y_orig(t)) - y_end_prev )
-        y_rel(t) = -sin(A) * ( (x_orig(t)) - x_end_prev ) + cos(A) * ( (y_orig(t)) - y_end_prev )
+    The returned expressions use the standard 2D rotation matrix for angle A = -theta_end_prev:
+        x_rel(t) =  cos(A) * (x_orig(t) - x_end_prev) - sin(A) * (y_orig(t) - y_end_prev)
+        y_rel(t) =  sin(A) * (x_orig(t) - x_end_prev) + cos(A) * (y_orig(t) - y_end_prev)
     where A = -theta_end_prev (embedded as a numeric constant).
     """
     try:
@@ -138,15 +138,17 @@ def wrap_to_relative(
         sin_a_str = f"{sin_a:.8f}"
 
         # Build relative expressions as strings
-        # x_rel(t) = cos(A) * ( x(t) - x_prev ) + sin(A) * ( y(t) - y_prev )
+        # Rotation matrix for transforming from global to local frame (rotate by -theta_prev):
+        # x_rel(t) =  cos(-θ) * (x - x_prev) - sin(-θ) * (y - y_prev)
+        # y_rel(t) =  sin(-θ) * (x - x_prev) + cos(-θ) * (y - y_prev)
+        # Since angle = -theta_prev, we have cos(angle) = cos(-θ) and sin(angle) = sin(-θ)
         x_rel_expr = (
-            f"{cos_a_str} * ( ({curve.x}) - {x_prev_str} ) + "
+            f"{cos_a_str} * ( ({curve.x}) - {x_prev_str} ) - "
             f"{sin_a_str} * ( ({curve.y}) - {y_prev_str} )"
         )
 
-        # y_rel(t) = -sin(A) * ( x(t) - x_prev ) + cos(A) * ( y(t) - y_prev )
         y_rel_expr = (
-            f"{-sin_a:.8f} * ( ({curve.x}) - {x_prev_str} ) + "
+            f"{sin_a_str} * ( ({curve.x}) - {x_prev_str} ) + "
             f"{cos_a_str} * ( ({curve.y}) - {y_prev_str} )"
         )
 
