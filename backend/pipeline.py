@@ -6,6 +6,7 @@ This is the main workflow controller that ties together all components.
 import os
 import json
 import logging
+import math
 import time
 import uuid
 import tempfile
@@ -168,12 +169,14 @@ class Pipeline:
         Build a relative program from absolute curves.
 
         Each curve is transformed into the local frame of the previous curve's end pose.
+        If curves are not connected (end of curve i != start of curve i+1), a pen-up
+        travel segment is inserted.
 
         Args:
             curves_dict: Dictionary containing a 'curves' list with absolute CurveDef objects
 
         Returns:
-            RelativeProgram with transformed segments
+            RelativeProgram with transformed segments (including travel segments)
         """
         logger.info("Building relative program from absolute curves...")
 
@@ -200,7 +203,50 @@ class Pipeline:
 
         for i, curve in enumerate(curve_defs):
             try:
-                # Transform to relative frame
+                # Compute where this curve starts in absolute coordinates
+                from .renderer_agent import safe_eval_expression
+                curve_start_x = safe_eval_expression(curve.x, curve.t_min)
+                curve_start_y = safe_eval_expression(curve.y, curve.t_min)
+
+                # Check if we need a travel segment (pen up)
+                # If this is not the first curve and it doesn't start where we ended
+                if i > 0:
+                    current_x, current_y, _ = current_pose
+                    distance = math.sqrt((curve_start_x - current_x)**2 + (curve_start_y - current_y)**2)
+
+                    if distance > 1e-3:  # Not connected (threshold: 1mm)
+                        logger.info(
+                            f"Curves not connected: inserting travel segment "
+                            f"from ({current_x:.4f}, {current_y:.4f}) to "
+                            f"({curve_start_x:.4f}, {curve_start_y:.4f}) "
+                            f"[distance: {distance:.4f}]"
+                        )
+
+                        # Create a travel segment (straight line with pen up)
+                        travel_curve = CurveDef(
+                            name=f"travel_to_{curve.name}",
+                            x=f"{current_x} + t * ({curve_start_x} - {current_x})",
+                            y=f"{current_y} + t * ({curve_start_y} - {current_y})",
+                            t_min=0.0,
+                            t_max=1.0,
+                            color=None  # Will be set to "none" for pen up
+                        )
+
+                        # Transform travel segment to relative frame
+                        travel_segment = utils_relative.wrap_to_relative(
+                            prev_pose=current_pose,
+                            curve=travel_curve,
+                            default_color="none"  # Pen up!
+                        )
+
+                        if utils_relative.validate_relative_segment(travel_segment):
+                            relative_segments.append(travel_segment)
+
+                        # Update current pose after travel
+                        travel_end_pose = utils_relative.compute_end_pose(travel_curve)
+                        current_pose = travel_end_pose
+
+                # Transform the actual drawing curve to relative frame
                 default_color = curve.color if curve.color else "#000000"
                 relative_segment = utils_relative.wrap_to_relative(
                     prev_pose=current_pose,
@@ -227,7 +273,8 @@ class Pipeline:
                 logger.error(f"Error processing curve '{curve.name}': {e}")
                 # Continue with remaining curves
 
-        logger.info(f"Built relative program with {len(relative_segments)} segments")
+        logger.info(f"Built relative program with {len(relative_segments)} segments "
+                   f"(including travel segments)")
         return RelativeProgram(segments=relative_segments)
 
     def _refinement_loop(
