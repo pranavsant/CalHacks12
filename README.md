@@ -60,7 +60,7 @@ User Prompt → Interpretation → Equation Generation → [Render → Evaluate 
 
 3. **Install dependencies**
    ```bash
-   pip install -r requirements.txt
+   pip install -r backend/requirements.txt
    ```
 
 4. **Set up environment variables**
@@ -79,7 +79,12 @@ User Prompt → Interpretation → Equation Generation → [Render → Evaluate 
 
 5. **Run the server**
    ```bash
-   uvicorn backend.main:app --reload
+   uvicorn backend.app.main:app --reload
+   ```
+
+   Or use the provided script:
+   ```bash
+   bash backend/scripts/run_server.sh
    ```
 
    The API will be available at `http://localhost:8000`
@@ -88,7 +93,7 @@ User Prompt → Interpretation → Equation Generation → [Render → Evaluate 
 
 1. **Build the Docker image**
    ```bash
-   docker build -t parametric-drawing .
+   docker build -t parametric-drawing ./backend
    ```
 
 2. **Run the container**
@@ -96,6 +101,11 @@ User Prompt → Interpretation → Equation Generation → [Render → Evaluate 
    docker run -d -p 8000:8000 \
      -e ANTHROPIC_API_KEY=your_key_here \
      parametric-drawing:latest
+   ```
+
+   Or use docker-compose:
+   ```bash
+   docker-compose up -d
    ```
 
 ## Usage
@@ -228,7 +238,7 @@ GET /health
 ### Python API
 
 ```python
-from backend import pipeline
+from backend.app import pipeline
 
 # Simple usage
 result = pipeline.run_pipeline("Draw a heart shape")
@@ -263,27 +273,42 @@ python tests/test_sample_prompt.py "Draw a spiral galaxy"
 
 ```
 CalHacks12/
-├── backend/
-│   ├── __init__.py
-│   ├── main.py                    # FastAPI application
-│   ├── pipeline.py                # Main orchestrator
-│   ├── schemas.py                 # Pydantic data models
-│   ├── utils_relative.py          # Relative coordinate transformations
-│   ├── claude_client.py           # Claude API integration
-│   ├── vapi_client.py             # Vapi voice transcription
-│   ├── renderer_agent.py          # Matplotlib rendering (absolute & relative)
-│   ├── evaluator_agent.py         # Image evaluation
-│   └── memory_manager.py          # State management
-├── tests/
-│   ├── test_sample_prompt.py      # Original test suite
-│   ├── test_relative_chaining.py  # Relative transformation tests
-│   ├── test_pen_color_default.py  # Pen color logic tests
-│   ├── test_degenerate_derivative.py  # Edge case handling tests
-│   └── test_response_schema.py    # Schema validation tests
-├── static/                         # Generated images
-├── requirements.txt                # Python dependencies
-├── Dockerfile                      # Docker configuration
-├── .env.example                    # Environment template
+├── backend/                        # Backend application root
+│   ├── app/                       # Python package
+│   │   ├── __init__.py
+│   │   ├── main.py               # FastAPI application
+│   │   ├── pipeline.py           # Main orchestrator
+│   │   ├── schemas.py            # Pydantic data models
+│   │   ├── utils_relative.py     # Relative coordinate transformations
+│   │   ├── claude_client.py      # Claude API integration
+│   │   ├── vapi_client.py        # Vapi voice transcription
+│   │   ├── renderer_agent.py     # Matplotlib rendering
+│   │   ├── evaluator_agent.py    # Image evaluation
+│   │   ├── memory_manager.py     # State management
+│   │   └── color_utils.py        # Color normalization
+│   ├── static/                    # Generated images (runtime)
+│   ├── exports/                   # Robot programs (runtime)
+│   ├── scripts/                   # Dev scripts
+│   │   ├── run_server.sh         # Server startup script
+│   │   └── sim_diffdrive.py      # Robot simulator
+│   ├── docs/                      # Technical documentation
+│   │   ├── IMPLEMENTATION.md
+│   │   ├── PROJECT_SUMMARY.md
+│   │   ├── QUICKSTART.md
+│   │   └── ROBOT_API_IMPLEMENTATION.md
+│   ├── requirements.txt           # Python dependencies
+│   ├── Dockerfile                 # Docker configuration
+│   ├── .env.example               # Environment template
+│   └── example_client.py          # Example API usage
+├── tests/                          # Test suite
+│   ├── test_sample_prompt.py
+│   ├── test_relative_chaining.py
+│   ├── test_pen_color_*.py
+│   ├── test_response_schema.py
+│   └── test_robot_*.py
+├── docker-compose.yml              # Docker compose
+├── .gitignore
+├── LICENSE
 └── README.md                       # This file
 ```
 
@@ -567,7 +592,7 @@ ModuleNotFoundError: No module named 'anthropic'
 Error: [Errno 48] Address already in use
 ```
 
-**Solution**: Change the port with `uvicorn backend.main:app --port 8001`
+**Solution**: Change the port with `uvicorn backend.app.main:app --port 8001`
 
 ### Image Not Rendering
 

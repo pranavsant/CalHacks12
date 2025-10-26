@@ -46,6 +46,7 @@ app.add_middleware(
 )
 
 # Mount static files directory
+# __file__ = backend/app/main.py -> parent = backend/app -> parent = backend/ -> backend/static
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 os.makedirs(STATIC_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -285,7 +286,8 @@ async def get_examples():
 
 
 # Robot Fetch API - constants
-EXPORTS_DIR = Path("exports")
+# __file__ = backend/app/main.py -> parent.parent = backend/ -> backend/exports
+EXPORTS_DIR = Path(__file__).resolve().parent.parent / "exports"
 FILENAME_PREFIX = "relative_program_"
 FILENAME_SUFFIX = ".json"
 

@@ -8,14 +8,14 @@ global positions yields the same result as the original absolute curves.
 import pytest
 import math
 import numpy as np
-from backend.schemas import CurveDef, PenSpec
-from backend.utils_relative import (
+from backend.app.schemas import CurveDef, PenSpec
+from backend.app.utils_relative import (
     compute_end_pose,
     wrap_to_relative,
     reconstruct_global_points,
     validate_relative_segment
 )
-from backend.renderer_agent import safe_eval_expression
+from backend.app.renderer_agent import safe_eval_expression
 
 
 def test_single_curve_identity():

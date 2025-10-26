@@ -5,8 +5,8 @@
 if [ ! -f .env ]; then
     echo "⚠️  Warning: .env file not found"
     echo "Creating .env from .env.example..."
-    if [ -f .env.example ]; then
-        cp .env.example .env
+    if [ -f backend/.env.example ]; then
+        cp backend/.env.example .env
         echo "✅ Created .env file. Please edit it with your API keys."
         echo ""
     fi
@@ -25,5 +25,5 @@ echo "📍 Server will be available at http://localhost:8000"
 echo "📚 API documentation at http://localhost:8000/docs"
 echo ""
 
-# Run the server
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+# Run the server from repo root
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload

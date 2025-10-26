@@ -8,8 +8,8 @@ are handled gracefully without NaN or errors.
 import pytest
 import math
 import numpy as np
-from backend.schemas import CurveDef
-from backend.utils_relative import (
+from backend.app.schemas import CurveDef
+from backend.app.utils_relative import (
     compute_end_pose,
     wrap_to_relative,
     validate_relative_segment,

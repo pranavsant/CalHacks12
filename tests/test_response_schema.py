@@ -7,7 +7,7 @@ from the pipeline, including the new relative_program field.
 
 import pytest
 from pydantic import ValidationError
-from backend.schemas import (
+from backend.app.schemas import (
     CurveDef,
     AbsoluteCurves,
     PenSpec,
@@ -65,7 +65,7 @@ def test_absolute_curves_valid():
 
 def test_pen_spec_with_color():
     """Test that PenSpec normalizes colors."""
-    from backend.color_utils import BLUE
+    from backend.app.color_utils import BLUE
     pen = PenSpec(color="#ABCDEF")
     # #ABCDEF (light blue) normalizes to blue
     assert pen.color == BLUE
@@ -79,7 +79,7 @@ def test_pen_spec_with_none():
 
 def test_relative_curve_def_valid():
     """Test that RelativeCurveDef validates and normalizes colors."""
-    from backend.color_utils import BLACK
+    from backend.app.color_utils import BLACK
     rel_curve = RelativeCurveDef(
         name="rel_segment",
         x_rel="0.5 * t",
@@ -259,7 +259,7 @@ def test_draw_result_from_pipeline_format():
     }
 
     # This should validate without error
-    from backend.color_utils import BLACK
+    from backend.app.color_utils import BLACK
     result = DrawResult(**pipeline_output)
 
     assert result.success is True

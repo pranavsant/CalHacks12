@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   parametric-drawing:
-    build: .
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: parametric-curve-drawing
     ports:
       - "8000:8000"
@@ -11,7 +13,8 @@ services:
       - VAPI_API_KEY=${VAPI_API_KEY:-}
       - LETTA_API_KEY=${LETTA_API_KEY:-}
     volumes:
-      - ./static:/app/static
+      - ./backend/static:/app/backend/static
+      - ./backend/exports:/app/backend/exports
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

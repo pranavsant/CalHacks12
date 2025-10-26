@@ -17,11 +17,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY backend/ ./backend/
-COPY static/ ./static/
+COPY app/ ./backend/app/
+COPY static/ ./backend/static/
+COPY exports/ ./backend/exports/
 
-# Create static directory if it doesn't exist
-RUN mkdir -p static
+# Create static and exports directories if they don't exist
+RUN mkdir -p backend/static backend/exports
 
 # Expose port
 EXPOSE 8000
@@ -30,4 +31,4 @@ EXPOSE 8000
 ENV PYTHONUNBUFFERED=1
 
 # Run the application
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

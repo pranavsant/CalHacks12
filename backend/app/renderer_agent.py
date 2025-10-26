@@ -19,6 +19,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Static directory for saving images
+# __file__ = backend/app/renderer_agent.py -> parent = backend/app -> parent = backend/ -> backend/static
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 
 

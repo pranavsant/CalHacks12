@@ -365,7 +365,8 @@ def run_pipeline(prompt_text: str, use_letta: bool = False) -> Dict[str, Any]:
     result = pipeline.run_pipeline(prompt_text)
 
     # --- Durable export of relative_program for robot ---
-    exports_dir = Path("exports")
+    # __file__ = backend/app/pipeline.py -> parent.parent = backend/ -> backend/exports
+    exports_dir = Path(__file__).resolve().parent.parent / "exports"
     exports_dir.mkdir(parents=True, exist_ok=True)
 
     run_id = uuid.uuid4().hex  # stable and unique

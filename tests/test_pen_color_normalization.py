@@ -5,7 +5,7 @@ Verifies that all colors are correctly normalized to black, blue, or pen-up.
 """
 
 import pytest
-from backend.color_utils import normalize_draw_color, BLACK, BLUE, PEN_UP
+from backend.app.color_utils import normalize_draw_color, BLACK, BLUE, PEN_UP
 
 
 class TestColorNormalization:
@@ -83,7 +83,7 @@ class TestPenSpecValidation:
 
     def test_penspec_normalizes_colors(self):
         """Verify that PenSpec validator normalizes colors."""
-        from backend.schemas import PenSpec
+        from backend.app.schemas import PenSpec
 
         # Test exact values
         pen = PenSpec(color="none")
@@ -97,7 +97,7 @@ class TestPenSpecValidation:
 
     def test_penspec_normalizes_arbitrary_colors(self):
         """Verify that PenSpec normalizes arbitrary colors."""
-        from backend.schemas import PenSpec
+        from backend.app.schemas import PenSpec
 
         # Red -> black
         pen = PenSpec(color="#FF0000")
@@ -117,14 +117,14 @@ class TestPenSpecValidation:
 
     def test_penspec_handles_none_input(self):
         """Verify that PenSpec handles None input by defaulting to black."""
-        from backend.schemas import PenSpec
+        from backend.app.schemas import PenSpec
 
         pen = PenSpec(color=None)
         assert pen.color == BLACK
 
     def test_penspec_json_schema_validation(self):
         """Verify that PenSpec can be serialized and deserialized."""
-        from backend.schemas import PenSpec
+        from backend.app.schemas import PenSpec
 
         # Create PenSpec with arbitrary color
         pen = PenSpec(color="#FF4500")
@@ -144,7 +144,7 @@ class TestRelativeProgramColorNormalization:
 
     def test_relative_program_normalizes_segment_colors(self):
         """Verify that RelativeProgram segments have normalized colors."""
-        from backend.schemas import RelativeCurveDef, PenSpec, RelativeProgram
+        from backend.app.schemas import RelativeCurveDef, PenSpec, RelativeProgram
 
         # Create segments with various colors
         segments = [
@@ -183,7 +183,7 @@ class TestRelativeProgramColorNormalization:
 
     def test_only_allowed_colors_in_program(self):
         """Verify that only allowed colors appear in relative programs."""
-        from backend.schemas import RelativeCurveDef, PenSpec, RelativeProgram
+        from backend.app.schemas import RelativeCurveDef, PenSpec, RelativeProgram
 
         allowed_colors = {BLACK, BLUE, PEN_UP}
 

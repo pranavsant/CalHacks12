@@ -33,15 +33,15 @@ wheels/
 *.swo
 *~
 
-# Static files (generated images)
-static/*.png
-static/*.jpg
-static/*.jpeg
-!static/.gitkeep
+# Static files (generated images) - now in backend/
+backend/static/*.png
+backend/static/*.jpg
+backend/static/*.jpeg
+!backend/static/.gitkeep
 
-# Exported json files
-exports/*.json
-!exports/.gitkeep
+# Exported json files - now in backend/
+backend/exports/*.json
+!backend/exports/.gitkeep
 
 # Logs
 *.log
