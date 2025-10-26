@@ -443,18 +443,24 @@ def run_pipeline_from_audio(audio_path: str, use_letta: bool = False) -> Dict[st
         # Run the normal pipeline with the transcribed text
         return run_pipeline(prompt_text, use_letta=use_letta)
 
-    except NotImplementedError as e:
+    except ValueError as e:
         logger.error(f"Audio transcription not available: {e}")
+        error_msg = str(e)
         return {
             "success": False,
-            "error": "Audio transcription not implemented. Please use text input or configure Vapi API.",
-            "details": str(e)
+            "error": error_msg
+        }
+    except FileNotFoundError as e:
+        logger.error(f"Audio file not found: {e}")
+        return {
+            "success": False,
+            "error": f"Audio file not found: {audio_path}"
         }
     except Exception as e:
         logger.error(f"Error processing audio: {e}", exc_info=True)
         return {
             "success": False,
-            "error": str(e)
+            "error": f"Failed to transcribe audio: {str(e)}"
         }
 
 

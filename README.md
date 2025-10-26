@@ -129,6 +129,11 @@ CalHacks12/
 │   ├── requirements.txt
 │   └── Dockerfile
 │
+├── hardware/                    # Robot control (optional)
+│   ├── robot_plotter.py        # Differential drive robot controller
+│   ├── README.md               # Hardware documentation
+│   └── requirements.txt
+│
 ├── tests/                       # Test suite
 ├── .env.example                 # Environment template
 ├── .env                         # Your secrets (git-ignored)
@@ -621,7 +626,7 @@ docker-compose up -d
 
 ## 🤖 Robot Integration
 
-The system generates **relative motion programs** for physical drawing robots.
+The system generates **relative motion programs** for physical drawing robots. A complete hardware control implementation is available in the `hardware/` directory.
 
 ### How It Works
 
@@ -630,7 +635,31 @@ The system generates **relative motion programs** for physical drawing robots.
 3. Robot fetches program via `GET /robot/{run_id}`
 4. Robot executes segments sequentially in local coordinates
 
-### Example Robot Code
+### Using the Included Robot Plotter
+
+A complete differential drive robot controller is provided in `hardware/`:
+
+```bash
+# Install dependencies (on Raspberry Pi)
+cd hardware
+pip install -r requirements.txt
+
+# Run with a generated drawing
+python robot_plotter.py <run_id>
+
+# Or test in simulation mode
+python robot_plotter.py <run_id> --simulate
+```
+
+**Features:**
+- Accurate differential drive kinematics
+- Synchronized dual stepper motor control (28BYJ-48)
+- Pen up/down handling for color changes
+- Works with or without Raspberry Pi hardware (simulation mode)
+
+See [`hardware/README.md`](hardware/README.md) for complete documentation.
+
+### Custom Robot Integration
 
 ```python
 import requests

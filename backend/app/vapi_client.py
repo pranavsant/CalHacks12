@@ -1,6 +1,6 @@
 """
-Vapi Client - Handles voice transcription using Vapi's Voice AI API.
-This module provides functions to transcribe audio files to text.
+Voice Transcription Client - Handles audio transcription to text.
+Uses multiple fallback providers for robust transcription.
 """
 
 import os
@@ -12,14 +12,17 @@ from typing import Optional
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Vapi API configuration
+# API configuration
 VAPI_API_KEY = os.getenv("VAPI_API_KEY")
 VAPI_BASE_URL = os.getenv("VAPI_BASE_URL", "https://api.vapi.ai")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 
 
 def transcribe_audio(audio_path: str) -> str:
     """
-    Transcribe an audio file to text using Vapi's API.
+    Transcribe an audio file to text using available transcription services.
+    Tries multiple providers in order: Deepgram, OpenAI Whisper, then fallback.
 
     Args:
         audio_path: Path to the audio file (WAV, MP3, etc.)
@@ -28,71 +31,127 @@ def transcribe_audio(audio_path: str) -> str:
         Transcribed text string
 
     Raises:
-        ValueError: If VAPI_API_KEY is not set
-        requests.RequestException: If the API call fails
+        ValueError: If no transcription service is available
+        FileNotFoundError: If audio file doesn't exist
     """
     logger.info(f"Transcribing audio file: {audio_path}")
-
-    if not VAPI_API_KEY:
-        logger.error("VAPI_API_KEY not found in environment variables")
-        raise ValueError("VAPI_API_KEY environment variable is required for voice transcription")
 
     # Check if audio file exists
     if not os.path.exists(audio_path):
         raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
+    # Try Deepgram first (fast and accurate)
+    if DEEPGRAM_API_KEY:
+        try:
+            return transcribe_with_deepgram(audio_path)
+        except Exception as e:
+            logger.warning(f"Deepgram transcription failed: {e}, trying next provider...")
+
+    # Try OpenAI Whisper next
+    if OPENAI_API_KEY:
+        try:
+            return transcribe_with_openai(audio_path)
+        except Exception as e:
+            logger.warning(f"OpenAI transcription failed: {e}, trying next provider...")
+
+    # Try speech_recognition library as fallback (uses Google)
     try:
-        # NOTE: This is a placeholder implementation.
-        # The actual Vapi API endpoints and request format may differ.
-        # Refer to Vapi documentation at https://docs.vapi.ai for the correct implementation.
-
-        # Example implementation (adjust based on actual Vapi API):
-        # Option 1: Direct transcription endpoint
-        # url = f"{VAPI_BASE_URL}/transcribe"
-        #
-        # with open(audio_path, 'rb') as audio_file:
-        #     files = {'audio': audio_file}
-        #     headers = {'Authorization': f'Bearer {VAPI_API_KEY}'}
-        #
-        #     response = requests.post(url, files=files, headers=headers, timeout=30)
-        #     response.raise_for_status()
-        #
-        #     result = response.json()
-        #     transcribed_text = result.get('text', '')
-        #
-        #     logger.info(f"Successfully transcribed: {transcribed_text}")
-        #     return transcribed_text
-
-        # Option 2: Using Vapi's assistant/call creation
-        # Vapi is primarily designed for real-time voice calls
-        # For file transcription, you might need to:
-        # 1. Create a temporary assistant configured for transcription
-        # 2. Create a call with the audio file
-        # 3. Poll for the transcription result
-
-        logger.warning("Vapi transcription not fully implemented - using placeholder")
-        logger.warning("Please refer to https://docs.vapi.ai for actual implementation")
-
-        # For development/testing purposes, return a placeholder
-        # This allows the system to work with text-only input
-        raise NotImplementedError(
-            "Vapi audio transcription requires API integration. "
-            "Please use text input or implement the Vapi API calls. "
-            "See https://docs.vapi.ai for documentation."
-        )
-
-    except requests.RequestException as e:
-        logger.error(f"Vapi API request failed: {e}")
-        raise
+        result = transcribe_audio_fallback(audio_path)
+        if result:
+            return result
     except Exception as e:
-        logger.error(f"Error in transcribe_audio: {e}")
-        raise
+        logger.warning(f"Fallback transcription failed: {e}")
+
+    # If all methods fail
+    raise ValueError(
+        "No transcription service available. Please set OPENAI_API_KEY or DEEPGRAM_API_KEY, "
+        "or install speech_recognition library for fallback transcription."
+    )
+
+
+def transcribe_with_deepgram(audio_path: str) -> str:
+    """
+    Transcribe audio using Deepgram API.
+
+    Args:
+        audio_path: Path to audio file
+
+    Returns:
+        Transcribed text
+    """
+    logger.info("Using Deepgram for transcription")
+
+    url = "https://api.deepgram.com/v1/listen"
+    headers = {
+        "Authorization": f"Token {DEEPGRAM_API_KEY}",
+        "Content-Type": "audio/*"
+    }
+
+    params = {
+        "model": "nova-2",
+        "smart_format": "true",
+        "punctuate": "true"
+    }
+
+    with open(audio_path, "rb") as audio_file:
+        response = requests.post(
+            url,
+            headers=headers,
+            params=params,
+            data=audio_file,
+            timeout=30
+        )
+        response.raise_for_status()
+
+        result = response.json()
+        transcript = result["results"]["channels"][0]["alternatives"][0]["transcript"]
+
+        logger.info(f"Deepgram transcription successful: {transcript}")
+        return transcript
+
+
+def transcribe_with_openai(audio_path: str) -> str:
+    """
+    Transcribe audio using OpenAI Whisper API.
+
+    Args:
+        audio_path: Path to audio file
+
+    Returns:
+        Transcribed text
+    """
+    logger.info("Using OpenAI Whisper for transcription")
+
+    url = "https://api.openai.com/v1/audio/transcriptions"
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}"
+    }
+
+    with open(audio_path, "rb") as audio_file:
+        files = {
+            "file": audio_file,
+            "model": (None, "whisper-1")
+        }
+
+        response = requests.post(
+            url,
+            headers=headers,
+            files=files,
+            timeout=30
+        )
+        response.raise_for_status()
+
+        result = response.json()
+        transcript = result["text"]
+
+        logger.info(f"OpenAI transcription successful: {transcript}")
+        return transcript
 
 
 def transcribe_audio_fallback(audio_path: str) -> Optional[str]:
     """
-    Fallback transcription method using alternative services.
-    This can use services like Google Speech Recognition, AssemblyAI, etc.
+    Fallback transcription method using speech_recognition library with Google.
+    This is free but requires internet connection and the speech_recognition library.
 
     Args:
         audio_path: Path to the audio file
@@ -100,68 +159,98 @@ def transcribe_audio_fallback(audio_path: str) -> Optional[str]:
     Returns:
         Transcribed text or None if transcription fails
     """
-    logger.info("Using fallback transcription method")
+    logger.info("Using fallback transcription method (Google Speech Recognition)")
 
     try:
-        # Option: Use speech_recognition library as fallback
-        # Uncomment if you want to add this as a backup:
-        #
-        # import speech_recognition as sr
-        # recognizer = sr.Recognizer()
-        #
-        # with sr.AudioFile(audio_path) as source:
-        #     audio = recognizer.record(source)
-        #     text = recognizer.recognize_google(audio)
-        #     logger.info(f"Fallback transcription successful: {text}")
-        #     return text
+        import speech_recognition as sr
 
-        logger.warning("No fallback transcription method configured")
+        recognizer = sr.Recognizer()
+
+        # Convert audio file to WAV if needed
+        audio_file_path = audio_path
+        if not audio_path.lower().endswith('.wav'):
+            logger.info("Converting audio to WAV format for speech_recognition")
+            try:
+                from pydub import AudioSegment
+                audio = AudioSegment.from_file(audio_path)
+                import tempfile
+                wav_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+                audio.export(wav_file.name, format='wav')
+                audio_file_path = wav_file.name
+                logger.info(f"Converted to WAV: {audio_file_path}")
+            except ImportError:
+                logger.warning("pydub not installed, trying with original file format")
+            except Exception as e:
+                logger.warning(f"Audio conversion failed: {e}, trying with original file")
+
+        with sr.AudioFile(audio_file_path) as source:
+            audio = recognizer.record(source)
+            text = recognizer.recognize_google(audio)
+            logger.info(f"Fallback transcription successful: {text}")
+            return text
+
+    except ImportError:
+        logger.warning("speech_recognition library not installed. Install with: pip install SpeechRecognition")
         return None
-
     except Exception as e:
         logger.error(f"Fallback transcription failed: {e}")
         return None
 
 
-def check_vapi_connection() -> bool:
+def check_transcription_available() -> dict:
     """
-    Check if Vapi API is accessible and credentials are valid.
+    Check which transcription services are available.
 
     Returns:
-        True if connection is successful, False otherwise
+        Dictionary with available services and their status
     """
-    if not VAPI_API_KEY:
-        logger.warning("VAPI_API_KEY not configured")
-        return False
+    services = {
+        "deepgram": bool(DEEPGRAM_API_KEY),
+        "openai": bool(OPENAI_API_KEY),
+        "google_fallback": False
+    }
 
+    # Check if speech_recognition is available
     try:
-        # Placeholder: actual health check endpoint may differ
-        # url = f"{VAPI_BASE_URL}/health"
-        # headers = {'Authorization': f'Bearer {VAPI_API_KEY}'}
-        # response = requests.get(url, headers=headers, timeout=5)
-        # return response.status_code == 200
+        import speech_recognition as sr
+        services["google_fallback"] = True
+    except ImportError:
+        pass
 
-        logger.info("Vapi connection check skipped (not implemented)")
-        return False
-
-    except Exception as e:
-        logger.error(f"Vapi connection check failed: {e}")
-        return False
+    return services
 
 
 if __name__ == "__main__":
-    # Test the Vapi client
-    print("Vapi Client")
+    # Test the transcription client
+    print("Voice Transcription Client")
     print("-" * 40)
 
-    if VAPI_API_KEY:
-        print(f"API Key configured: {VAPI_API_KEY[:10]}...")
-        print(f"Base URL: {VAPI_BASE_URL}")
-    else:
-        print("WARNING: VAPI_API_KEY not set")
-        print("Audio transcription will not work")
+    services = check_transcription_available()
 
-    print("\nTo enable voice input:")
-    print("1. Get a Vapi API key from https://vapi.ai")
-    print("2. Set VAPI_API_KEY environment variable")
-    print("3. Implement the transcribe_audio function based on Vapi docs")
+    print("\nAvailable transcription services:")
+    if services["deepgram"]:
+        print("✓ Deepgram API (fastest, most accurate)")
+    else:
+        print("✗ Deepgram API - set DEEPGRAM_API_KEY to enable")
+
+    if services["openai"]:
+        print("✓ OpenAI Whisper (high quality)")
+    else:
+        print("✗ OpenAI Whisper - set OPENAI_API_KEY to enable")
+
+    if services["google_fallback"]:
+        print("✓ Google Speech Recognition (free fallback)")
+    else:
+        print("✗ Google Speech Recognition - install SpeechRecognition to enable")
+
+    if not any(services.values()):
+        print("\n⚠️  WARNING: No transcription service available!")
+        print("\nTo enable voice input, choose one:")
+        print("1. Deepgram (recommended): Get key from https://deepgram.com")
+        print("   Set DEEPGRAM_API_KEY in .env")
+        print("2. OpenAI Whisper: Get key from https://platform.openai.com")
+        print("   Set OPENAI_API_KEY in .env")
+        print("3. Free fallback: Install SpeechRecognition")
+        print("   pip install SpeechRecognition pydub")
+    else:
+        print("\n✓ Voice transcription is ready!")

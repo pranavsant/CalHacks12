@@ -1,0 +1,14 @@
+# Hardware Control Module Requirements
+# For Raspberry Pi robot plotter
+
+# HTTP client for backend API communication
+requests>=2.31.0
+
+# Raspberry Pi GPIO control (only available/needed on Raspberry Pi)
+# Note: This will fail on non-Pi systems, which is expected
+# The script will fall back to dummy GPIO automatically
+RPi.GPIO>=0.7.1; platform_machine=="armv7l" or platform_machine=="aarch64"
+
+# Optional: For future enhancements
+# pyserial>=3.5  # If adding serial communication
+# pigpio>=1.78   # Alternative GPIO library with better PWM support
