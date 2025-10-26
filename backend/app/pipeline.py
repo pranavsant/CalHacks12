@@ -10,6 +10,7 @@ import math
 import time
 import uuid
 import tempfile
+import requests  # Added for HTTP POST
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 
@@ -27,6 +28,10 @@ logger = logging.getLogger(__name__)
 # Configuration
 MAX_ITERATIONS = 3
 TARGET_SCORE = 9.0
+
+# Server configuration
+SERVER_URL = os.environ.get("ROBOT_SERVER_URL", "https://overnice-fish-2071.dataplicity.io/")
+POST_TIMEOUT = 10  # seconds
 
 
 class Pipeline:
@@ -350,6 +355,62 @@ class Pipeline:
         return current_curves, score, feedback, image_path
 
 
+def _post_to_server(payload: Dict[str, Any], run_id: str) -> Dict[str, Any]:
+    """
+    POST the relative program to the robot server.
+
+    Args:
+        payload: Dictionary containing run_id, prompt, and relative_program
+        run_id: Unique run identifier
+
+    Returns:
+        Dictionary with post_success (bool) and optional post_error (str)
+    """
+    result = {"post_success": False}
+    
+    try:
+        logger.info(f"POSTing relative program to {SERVER_URL}...")
+        
+        response = requests.post(
+            SERVER_URL,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=POST_TIMEOUT
+        )
+        
+        response.raise_for_status()  # Raise exception for 4xx/5xx status codes
+        
+        logger.info(f"Successfully POSTed to server: {response.status_code}")
+        logger.info(f"Server response: {response.text[:200]}")  # Log first 200 chars
+        
+        result["post_success"] = True
+        result["post_status_code"] = response.status_code
+        result["post_response"] = response.json() if response.content else {}
+        
+    except requests.exceptions.Timeout:
+        error_msg = f"POST request timed out after {POST_TIMEOUT}s"
+        logger.error(error_msg)
+        result["post_error"] = error_msg
+        
+    except requests.exceptions.ConnectionError as e:
+        error_msg = f"Failed to connect to server: {e}"
+        logger.error(error_msg)
+        result["post_error"] = error_msg
+        
+    except requests.exceptions.HTTPError as e:
+        error_msg = f"Server returned error: {e.response.status_code} - {e.response.text[:200]}"
+        logger.error(error_msg)
+        result["post_error"] = error_msg
+        result["post_status_code"] = e.response.status_code
+        
+    except Exception as e:
+        error_msg = f"Unexpected error during POST: {e}"
+        logger.error(error_msg, exc_info=True)
+        result["post_error"] = error_msg
+    
+    return result
+
+
 def run_pipeline(prompt_text: str, use_letta: bool = False) -> Dict[str, Any]:
     """
     Convenience function to run the pipeline.
@@ -396,7 +457,7 @@ def run_pipeline(prompt_text: str, use_letta: bool = False) -> Dict[str, Any]:
 
     export_path = exports_dir / f"relative_program_{run_id}.json"
 
-    # Atomic write to avoid partial files
+    # 1. Write to disk (atomic write to avoid partial files)
     try:
         with tempfile.NamedTemporaryFile("w", delete=False, dir=exports_dir, encoding="utf-8") as tf:
             json.dump(payload, tf, indent=2)
@@ -404,15 +465,18 @@ def run_pipeline(prompt_text: str, use_letta: bool = False) -> Dict[str, Any]:
         os.replace(tmp_name, export_path)
         logger.info(f"Exported relative program to {export_path}")
     except Exception as e:
-        logger.error(f"Failed to export relative program: {e}")
-        # Continue without crashing - export is supplemental
-        return result
+        logger.error(f"Failed to export relative program to disk: {e}")
+        # Continue to try POST anyway
+
+    # 2. POST to server
+    post_result = _post_to_server(payload, run_id)
 
     # Attach run info back to result (preserve existing stats)
     stats = result.get("stats") or {}
     stats.update({
         "run_id": run_id,
-        "export_path": str(export_path)
+        "export_path": str(export_path),
+        **post_result  # Adds post_success, post_error, etc.
     })
     result["stats"] = stats
 
@@ -488,6 +552,13 @@ if __name__ == "__main__":
         print(f"Iterations: {result['iterations']}")
         print(f"Processing Time: {result['processing_time']}s")
         print(f"Image: {result['image_path']}")
+        
+        # Show POST result
+        stats = result.get("stats", {})
+        if stats.get("post_success"):
+            print(f"✓ Posted to server successfully")
+        elif "post_error" in stats:
+            print(f"✗ POST failed: {stats['post_error']}")
     else:
         print("\n" + "=" * 60)
         print("PIPELINE FAILED")

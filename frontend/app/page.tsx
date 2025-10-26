@@ -70,7 +70,7 @@ export default function Home() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-12 text-center">
           <h1 className="mb-3 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            Parametric Drawing Generator
+            NeuroPlot
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground leading-relaxed">
             Describe an image with text or voice, and watch AI create it using parametric curves
