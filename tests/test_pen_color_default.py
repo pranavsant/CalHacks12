@@ -6,9 +6,9 @@ All colors are now automatically normalized to black (#000000), blue (#0000FF), 
 """
 
 import pytest
-from backend.schemas import CurveDef, PenSpec
-from backend.utils_relative import wrap_to_relative
-from backend.color_utils import BLACK, BLUE, PEN_UP
+from backend.app.schemas import CurveDef, PenSpec
+from backend.app.utils_relative import wrap_to_relative
+from backend.app.color_utils import BLACK, BLUE, PEN_UP
 
 
 def test_curve_with_explicit_color():

@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 
 # Import the FastAPI app
-from backend.main import app
+from backend.app.main import app
 
 # Create test client
 client = TestClient(app)

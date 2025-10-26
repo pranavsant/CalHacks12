@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def test_export_directory_structure():
     """Test that exports directory can be created."""
-    from backend.pipeline import Path as PipelinePath
+    from backend.app.pipeline import Path as PipelinePath
 
     exports_dir = PipelinePath("exports")
     exports_dir.mkdir(parents=True, exist_ok=True)

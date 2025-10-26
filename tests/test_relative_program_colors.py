@@ -6,9 +6,9 @@ allowed colors (black, blue, or pen-up).
 """
 
 import pytest
-from backend.schemas import CurveDef, RelativeProgram, PenSpec
-from backend.utils_relative import wrap_to_relative, compute_end_pose
-from backend.color_utils import BLACK, BLUE, PEN_UP
+from backend.app.schemas import CurveDef, RelativeProgram, PenSpec
+from backend.app.utils_relative import wrap_to_relative, compute_end_pose
+from backend.app.color_utils import BLACK, BLUE, PEN_UP
 
 
 class TestRelativeProgramColorIntegration:

@@ -1,0 +1,35 @@
+# FastAPI and web server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+pydantic>=2.0.0
+
+# AI/ML APIs
+anthropic>=0.71.0
+
+# Plotting and visualization
+matplotlib>=3.9.0
+numpy>=1.26.4
+
+# HTTP requests
+requests==2.31.0
+
+# Image processing
+Pillow>=10.3.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Testing
+pytest>=8.0.0
+
+# Voice transcription (optional, choose one or more)
+# For free fallback using Google Speech Recognition:
+SpeechRecognition>=3.10.0
+pydub>=0.25.1  # For audio format conversion
+
+# Optional: Letta Cloud integration (if available)
+# letta-client
+
+# Optional: Fetch.ai integration (if available)
+# fetchai

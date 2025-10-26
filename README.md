@@ -1,115 +1,392 @@
-# Parametric Curve Drawing System
+# Parametric Drawing Generator
 
-Transform natural language (or voice) prompts into mathematical parametric curves and rendered images using AI.
+> Transform natural language and voice prompts into mathematical parametric curves and rendered images using AI.
 
-## Overview
+**Built for Cal Hacks 12.0** 🚀
 
-The Parametric Curve Drawing System is an automated pipeline that converts descriptive prompts like "Draw a butterfly" into mathematical parametric equations and visualizes them as images. Built for Cal Hacks 12.0, it integrates multiple AI technologies:
+![Architecture](https://img.shields.io/badge/Frontend-Next.js_16-black?logo=next.js)
+![Backend](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi)
+![AI](https://img.shields.io/badge/AI-Claude_Sonnet_4.5-8B5CF6)
 
-- **[Anthropic Claude Sonnet 4.5](https://anthropic.com)** - Natural language understanding and mathematical reasoning
-- **[Vapi](https://vapi.ai)** - Voice-to-text transcription (optional)
-- **[Letta Cloud](https://letta.com)** - Persistent memory across sessions (optional)
-- **[Fetch.ai Agentverse](https://fetch.ai)** - Multi-agent orchestration framework (optional)
-- **[Composio](https://composio.dev)** - Tool routing and MCP integration (future enhancement)
+---
 
-## Architecture
+## ✨ What It Does
 
-The system operates through five main phases:
+Describe an image with **text** or **voice**, and watch AI generate it using parametric equations:
 
-1. **Input Processing** - Convert voice or text into structured descriptions
-2. **Equation Generation** - Generate parametric equations from descriptions
-3. **Multi-Agent Refinement** - Iteratively improve drawings through render → evaluate → refine
-4. **Workflow Orchestration** - Coordinate all phases seamlessly
-5. **Output & Visualization** - Deliver final equations and rendered images
+- 🎨 **Natural Language to Math** - "Draw a butterfly" → parametric curves
+- 🎤 **Voice Input Support** - Record or upload audio descriptions
+- 🔄 **Iterative Refinement** - AI self-improves drawings through multi-agent evaluation
+- 🤖 **Robot-Ready Output** - Generate programs for physical drawing robots
+- 🖼️ **Beautiful Visualization** - High-quality rendered images
 
-```
-User Prompt → Interpretation → Equation Generation → [Render → Evaluate → Refine]* → Final Image
-                (Claude)            (Claude)              Multi-Agent Loop            (Matplotlib)
-```
+---
 
-## Features
-
-- **Natural Language to Math** - Converts descriptive text into parametric equations
-- **Voice Input Support** - Optional voice-to-text via Vapi API
-- **Iterative Refinement** - Self-improves drawings through multi-agent evaluation
-- **RESTful API** - Easy integration with FastAPI backend
-- **High-Quality Rendering** - Matplotlib-based visualization
-- **Persistent Memory** - Optional Letta Cloud integration for session continuity
-
-## Installation
+## 🚀 Quick Start (Run the Full Application)
 
 ### Prerequisites
 
-- Python 3.11 or higher
-- pip (Python package manager)
-- Optional: Docker for containerized deployment
+- **Python 3.11+** with pip
+- **Node.js 18+** with npm
+- **Anthropic API Key** ([Get one here](https://console.anthropic.com/))
 
-### Local Setup
+### 1. Clone & Set Up Environment
 
-1. **Clone the repository**
+```bash
+# Clone the repository
+git clone <repository-url>
+cd CalHacks12
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env and add your ANTHROPIC_API_KEY
+```
+
+### 2. Install Dependencies
+
+#### Backend:
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cd ..
+```
+
+#### Frontend:
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+### 3. Run the Application
+
+**Option A: Two Terminal Windows (Recommended)**
+
+Terminal 1 - Backend:
+```bash
+cd backend
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Terminal 2 - Frontend:
+```bash
+cd frontend
+npm run dev
+```
+
+**Option B: Using tmux (Advanced)**
+```bash
+# Start backend in background pane
+tmux new-session -d -s calhacks 'cd backend && source venv/bin/activate && uvicorn app.main:app --reload'
+# Start frontend in foreground
+tmux split-window -h 'cd frontend && npm run dev'
+tmux attach -t calhacks
+```
+
+### 4. Open Your Browser
+
+- **Frontend**: http://localhost:3000
+- **Backend API Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+
+### 5. Try It Out!
+
+1. Type a prompt: `"Draw a spiral flower with 5 petals"`
+2. Or record audio: Click the microphone button and describe your image
+3. Hit **"Generate Drawing"**
+4. Watch the AI create parametric equations and render your image!
+
+---
+
+## 📁 Project Structure
+
+```
+CalHacks12/
+├── frontend/                    # Next.js web application
+│   ├── app/
+│   │   ├── page.tsx            # Main page component
+│   │   └── api/draw/route.ts   # API proxy to backend
+│   ├── components/
+│   │   ├── drawing-input.tsx   # Input form (text/voice)
+│   │   └── drawing-results.tsx # Results display
+│   ├── types/drawing.ts        # TypeScript interfaces
+│   └── package.json
+│
+├── backend/                     # FastAPI backend
+│   ├── app/
+│   │   ├── main.py             # FastAPI application
+│   │   ├── pipeline.py         # Main orchestration pipeline
+│   │   ├── schemas.py          # Pydantic data models
+│   │   ├── claude_client.py    # Claude AI integration
+│   │   ├── renderer_agent.py   # Image rendering
+│   │   ├── evaluator_agent.py  # Quality evaluation
+│   │   └── utils_relative.py   # Robot coordinate transforms
+│   ├── static/                 # Generated images (runtime)
+│   ├── exports/                # Robot programs (runtime)
+│   ├── requirements.txt
+│   └── Dockerfile
+│
+├── hardware/                    # Robot control (optional)
+│   ├── robot_plotter.py        # Differential drive robot controller
+│   ├── README.md               # Hardware documentation
+│   └── requirements.txt
+│
+├── tests/                       # Test suite
+├── .env.example                 # Environment template
+├── .env                         # Your secrets (git-ignored)
+└── README.md                    # This file
+```
+
+---
+
+## 🛠️ Development Setup
+
+### Backend Setup
+
+1. **Create virtual environment:**
    ```bash
-   git clone <repository-url>
-   cd CalHacks12
-   ```
-
-2. **Create and activate a virtual environment**
-   ```bash
+   cd backend
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/bin/activate
    ```
 
-3. **Install dependencies**
+2. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Set up environment variables**
-
-   Create a `.env` file in the project root:
+3. **Configure environment variables** (in project root `.env`):
    ```bash
    # Required
-   ANTHROPIC_API_KEY=your_anthropic_api_key_here
+   ANTHROPIC_API_KEY=sk-ant-...
 
    # Optional
-   VAPI_API_KEY=your_vapi_api_key_here
-   LETTA_API_KEY=your_letta_api_key_here
+   VAPI_API_KEY=your_vapi_key      # For voice transcription
+   LETTA_API_KEY=your_letta_key    # For persistent memory
+   PORT=8000                        # Backend port (default: 8000)
    ```
 
-   Get your Anthropic API key from [https://console.anthropic.com/](https://console.anthropic.com/)
-
-5. **Run the server**
+4. **Run backend:**
    ```bash
-   uvicorn backend.main:app --reload
+   # Development mode with auto-reload
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+   # Or use the provided script:
+   bash scripts/run_server.sh
    ```
 
-   The API will be available at `http://localhost:8000`
+5. **Verify it's running:**
+   - API: http://localhost:8000
+   - Docs: http://localhost:8000/docs
+   - Health: http://localhost:8000/health
 
-### Docker Setup
+### Frontend Setup
 
-1. **Build the Docker image**
+1. **Install dependencies:**
    ```bash
-   docker build -t parametric-drawing .
+   cd frontend
+   npm install
    ```
 
-2. **Run the container**
+2. **Configure backend URL** (optional):
+
+   Create `frontend/.env.local` if you need to change the backend URL:
    ```bash
-   docker run -d -p 8000:8000 \
-     -e ANTHROPIC_API_KEY=your_key_here \
-     parametric-drawing:latest
+   BACKEND_URL=http://localhost:8000
    ```
 
-## Usage
+   **Default:** If not set, it uses `http://localhost:8000`
 
-### API Endpoints
+3. **Run frontend:**
+   ```bash
+   npm run dev
+   ```
 
-#### 1. Create Drawing from Text
+4. **Verify it's running:**
+   - Frontend: http://localhost:3000
 
-```bash
-POST /draw
+### Running Both Together
+
+**Recommended workflow:**
+
+1. Start backend first (wait for "Application startup complete")
+2. Start frontend second
+3. Frontend will automatically connect to backend at `http://localhost:8000`
+
+**Troubleshooting Connection:**
+- ✅ Backend running? Check http://localhost:8000/health
+- ✅ Frontend running? Check http://localhost:3000
+- ✅ CORS enabled? (Backend automatically allows all origins in dev mode)
+- ✅ Ports not in use? Change with `--port` or `PORT` env var
+
+---
+
+## 🎯 How to Use
+
+### Text Input
+
+1. Open http://localhost:3000
+2. Type your prompt: `"Draw a heart shape"`
+3. Optionally toggle "Use Letta Memory" for contextual awareness
+4. Click **"Generate Drawing"**
+5. View your image, parametric equations, and AI evaluation score!
+
+### Voice Input
+
+1. Click the **"Record Audio"** button (grant microphone permission)
+2. Describe your image: *"Draw a butterfly with rainbow wings"*
+3. Click **"Stop Recording"**
+4. The system will transcribe and generate your drawing
+5. See the transcribed prompt displayed with your image
+
+**Or upload an audio file:**
+1. Click **"Upload Audio"**
+2. Select a .wav, .mp3, or other audio file
+3. Generate!
+
+---
+
+## 🏗️ Architecture
+
+### System Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        FRONTEND                             │
+│  (Next.js 16 + React 19 + Tailwind CSS + shadcn/ui)       │
+│                                                             │
+│  ┌──────────────┐      ┌──────────────┐                   │
+│  │ Text Input   │      │ Voice Input  │                   │
+│  │  Component   │      │  Component   │                   │
+│  └──────┬───────┘      └──────┬───────┘                   │
+│         │                     │                            │
+│         └─────────┬───────────┘                            │
+│                   │                                        │
+│         ┌─────────▼──────────┐                             │
+│         │   API Route        │                             │
+│         │  /api/draw         │                             │
+│         └─────────┬──────────┘                             │
+└───────────────────┼─────────────────────────────────────┘
+                    │ HTTP POST
+                    │
+┌───────────────────▼─────────────────────────────────────┐
+│                      BACKEND                             │
+│            (FastAPI + Python 3.11)                       │
+│                                                           │
+│  ┌─────────────┐         ┌─────────────┐                │
+│  │ POST /draw  │         │POST /draw/  │                │
+│  │   (text)    │         │   audio     │                │
+│  └──────┬──────┘         └──────┬──────┘                │
+│         │                       │                        │
+│         │    ┌──────────────────┘                        │
+│         │    │                                           │
+│    ┌────▼────▼────┐                                      │
+│    │   Pipeline   │                                      │
+│    └────┬─────────┘                                      │
+│         │                                                │
+│    ┌────▼──────────────────────────────────┐            │
+│    │  Phase 1: Prompt Interpretation       │            │
+│    │           (Claude)                    │            │
+│    └────┬──────────────────────────────────┘            │
+│         │                                                │
+│    ┌────▼──────────────────────────────────┐            │
+│    │  Phase 2: Equation Generation         │            │
+│    │           (Claude)                    │            │
+│    └────┬──────────────────────────────────┘            │
+│         │                                                │
+│    ┌────▼──────────────────────────────────┐            │
+│    │  Phase 3: Multi-Agent Refinement      │            │
+│    │   ┌────────────────────────┐          │            │
+│    │   │ Render → Evaluate →    │          │            │
+│    │   │ Refine (up to 3x)      │          │            │
+│    │   └────────────────────────┘          │            │
+│    └────┬──────────────────────────────────┘            │
+│         │                                                │
+│    ┌────▼──────────────────────────────────┐            │
+│    │  Phase 4: Relative Program Gen        │            │
+│    │   (Robot coordinate transforms)       │            │
+│    └────┬──────────────────────────────────┘            │
+│         │                                                │
+│    ┌────▼──────────────────────────────────┐            │
+│    │  Phase 5: Return Results              │            │
+│    │  - Image (base64)                     │            │
+│    │  - Parametric equations               │            │
+│    │  - Robot program                      │            │
+│    │  - Evaluation score                   │            │
+│    └───────────────────────────────────────┘            │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Technology Stack
+
+**Frontend:**
+- **Framework:** Next.js 16 (App Router) + React 19
+- **Styling:** Tailwind CSS 4 + shadcn/ui components
+- **Audio:** Web Audio API + MediaRecorder
+- **Type Safety:** TypeScript 5
+
+**Backend:**
+- **Framework:** FastAPI (Python 3.11)
+- **AI:** Anthropic Claude Sonnet 4.5
+- **Rendering:** Matplotlib
+- **Voice (Optional):** Vapi API
+- **Memory (Optional):** Letta Cloud
+- **Data Validation:** Pydantic v2
+
+---
+
+## 📡 API Reference
+
+### Frontend → Backend Flow
+
+#### Text Input Flow:
+```
+POST /api/draw
 Content-Type: application/json
 
 {
-  "prompt": "Draw a butterfly with symmetric wings",
+  "prompt": "Draw a circle",
+  "use_letta": false
+}
+↓
+Backend: POST http://localhost:8000/draw
+↓
+Response: DrawingResponse
+```
+
+#### Audio Input Flow:
+```
+POST /api/draw
+Content-Type: multipart/form-data
+
+FormData {
+  file: Blob (audio),
+  use_letta: "false"
+}
+↓
+Backend: POST http://localhost:8000/draw/audio
+FormData {
+  audio: Blob,
+  use_letta: "false"
+}
+↓
+Response: DrawingResponse (with transcribed prompt)
+```
+
+### Backend Endpoints
+
+**Full API documentation:** http://localhost:8000/docs
+
+#### `POST /draw`
+Create drawing from text prompt.
+
+**Request:**
+```json
+{
+  "prompt": "Draw a spiral galaxy",
   "use_letta": false
 }
 ```
@@ -118,482 +395,520 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "prompt": "Draw a butterfly with symmetric wings",
-  "curves": {
-    "curves": [
-      {
-        "name": "left_wing",
-        "x": "cos(t) + 1",
-        "y": "0.5*sin(2*t)",
-        "t_min": 0,
-        "t_max": 6.283185307179586,
-        "color": "#FF4500"  // Note: Original color from Claude (for reference only)
-      }
-    ]
-  },
-  "relative_program": {
-    "segments": [
-      {
-        "name": "left_wing",
-        "x_rel": "1.00000000 * ( (cos(t) + 1) - 0.00000000 ) + 0.00000000 * ( (0.5*sin(2*t)) - 0.00000000 )",
-        "y_rel": "0.00000000 * ( (cos(t) + 1) - 0.00000000 ) + 1.00000000 * ( (0.5*sin(2*t)) - 0.00000000 )",
-        "t_min": 0.0,
-        "t_max": 6.283185307179586,
-        "pen": {
-          "color": "#000000"  // Normalized: #FF4500 (orange-red) → #000000 (black)
-        }
-      }
-    ]
-  },
-  "iterations": 2,
-  "evaluation_score": 8.5,
+  "prompt": "Draw a spiral galaxy",
   "image_base64": "data:image/png;base64,...",
-  "processing_time": 4.2
-}
-```
-
-> **Note**: The `relative_program` field contains the **preferred output format** for robot execution. Each segment is expressed in the local frame of where the previous segment ended. The robot executes segments sequentially without tracking global position. The `curves` field is maintained for backward compatibility.
-
-#### 2. Create Drawing from Audio
-
-```bash
-POST /draw/audio
-Content-Type: multipart/form-data
-
-audio: <audio_file.wav>
-use_letta: false
-```
-
-#### 3. Get Example Prompts
-
-```bash
-GET /examples
-```
-
-#### 4. Fetch Robot Program (NEW)
-
-```bash
-GET /robot/{run_id}
-```
-
-Fetch a previously generated relative motion plan for robot execution. The `run_id` is returned in the `stats` field of the `/draw` response.
-
-**Example:**
-
-```bash
-# Step 1: Generate a drawing and get run_id
-curl -X POST http://localhost:8000/draw \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Draw a butterfly"}'
-
-# Response includes: "stats": {"run_id": "abc123...", "export_path": "exports/relative_program_abc123.json"}
-
-# Step 2: Fetch the program on your robot (e.g., Raspberry Pi)
-curl http://your-server:8000/robot/abc123...
-```
-
-**Response:**
-```json
-{
-  "run_id": "abc123def456...",
-  "prompt": "Draw a butterfly",
   "relative_program": {
     "segments": [
       {
-        "name": "left_wing",
-        "x_rel": "1.00000000 * ( (cos(t) + 1) - 0.00000000 ) + ...",
-        "y_rel": "0.00000000 * ( (cos(t) + 1) - 0.00000000 ) + ...",
-        "t_min": 0.0,
-        "t_max": 6.28318531,
-        "pen": {"color": "#000000"}  // Normalized to black or blue
+        "name": "spiral_arm",
+        "x_rel": "t*cos(t)",
+        "y_rel": "t*sin(t)",
+        "t_min": 0,
+        "t_max": 12.566,
+        "pen": { "color": "#000000" }
       }
     ]
+  },
+  "evaluation_score": 8.5,
+  "iterations": 2,
+  "processing_time": 4.2,
+  "stats": {
+    "run_id": "abc123...",
+    "export_path": "exports/relative_program_abc123.json"
   }
 }
 ```
 
-**Features:**
-- ✅ Durable storage in `exports/` directory
-- ✅ Path-safe (no directory traversal)
-- ✅ Lightweight caching (5 second max-age)
-- ✅ 404 on missing run_id
-- ✅ 400 on invalid run_id format
+#### `POST /draw/audio`
+Create drawing from audio file.
 
-#### 5. Health Check
-
+**Request:**
 ```bash
-GET /health
+curl -X POST http://localhost:8000/draw/audio \
+  -F "audio=@recording.wav" \
+  -F "use_letta=false"
 ```
 
-### Python API
+**Response:** Same as `/draw`, with transcribed prompt
 
-```python
-from backend import pipeline
+#### `GET /robot/{run_id}`
+Fetch robot program for physical drawing.
 
-# Simple usage
-result = pipeline.run_pipeline("Draw a heart shape")
-
-if result["success"]:
-    print(f"Generated {len(result['curves']['curves'])} curves")
-    print(f"Image saved to: {result['image_path']}")
-    print(f"Final score: {result['evaluation_score']}/10")
+**Response:**
+```json
+{
+  "run_id": "abc123...",
+  "prompt": "Draw a star",
+  "relative_program": { ... }
+}
 ```
 
-### Testing
+#### `GET /health`
+Check system status.
 
-Run the test suite:
-
-```bash
-python tests/test_sample_prompt.py
+**Response:**
+```json
+{
+  "status": "healthy",
+  "services": {
+    "anthropic_claude": "configured",
+    "vapi_voice": "not_configured",
+    "letta_memory": "not_configured"
+  }
+}
 ```
 
-Run interactive mode:
+---
+
+## 🎨 Understanding the Output
+
+### Generated Image
+The AI creates a mathematical drawing rendered as a PNG image, displayed in the frontend.
+
+### Prompt Display
+Shows the exact prompt used (especially useful for voice input to confirm transcription).
+
+### Parametric Equations
+**Relative Program Segments** (preferred for robots):
+```
+spiral_arm:
+  x(t) = t*cos(t)
+  y(t) = t*sin(t)
+  t ∈ [0.00, 12.57]
+  Color: Black
+```
+
+Each segment is expressed in **local coordinates** relative to the previous segment's end position. Perfect for robots without global localization!
+
+### Evaluation Score
+AI scores the drawing from 0-10 based on how well it matches the prompt:
+- **9-10:** Excellent match
+- **7-8:** Good match
+- **5-6:** Acceptable
+- **<5:** Needs improvement
+
+### Iterations
+Number of refinement cycles the AI performed (max 3).
+
+---
+
+## 🧪 Testing
+
+### Backend Testing
 
 ```bash
+cd backend
+source venv/bin/activate
+
+# Run all tests
+python -m pytest tests/
+
+# Test a specific prompt
+python tests/test_sample_prompt.py "Draw a heart"
+
+# Interactive mode
 python tests/test_sample_prompt.py --interactive
 ```
 
-Test a specific prompt:
+### Frontend Testing
 
 ```bash
-python tests/test_sample_prompt.py "Draw a spiral galaxy"
+cd frontend
+npm run build  # Ensure no build errors
+npm run lint   # Check for linting issues
 ```
 
-## Project Structure
+### End-to-End Testing
 
-```
-CalHacks12/
-├── backend/
-│   ├── __init__.py
-│   ├── main.py                    # FastAPI application
-│   ├── pipeline.py                # Main orchestrator
-│   ├── schemas.py                 # Pydantic data models
-│   ├── utils_relative.py          # Relative coordinate transformations
-│   ├── claude_client.py           # Claude API integration
-│   ├── vapi_client.py             # Vapi voice transcription
-│   ├── renderer_agent.py          # Matplotlib rendering (absolute & relative)
-│   ├── evaluator_agent.py         # Image evaluation
-│   └── memory_manager.py          # State management
-├── tests/
-│   ├── test_sample_prompt.py      # Original test suite
-│   ├── test_relative_chaining.py  # Relative transformation tests
-│   ├── test_pen_color_default.py  # Pen color logic tests
-│   ├── test_degenerate_derivative.py  # Edge case handling tests
-│   └── test_response_schema.py    # Schema validation tests
-├── static/                         # Generated images
-├── requirements.txt                # Python dependencies
-├── Dockerfile                      # Docker configuration
-├── .env.example                    # Environment template
-└── README.md                       # This file
+1. Start both backend and frontend
+2. **Test Text Input:**
+   - Enter: `"Draw a circle"`
+   - Verify image appears
+   - Check parametric equations displayed
+   - Confirm score and iterations shown
+
+3. **Test Voice Input:**
+   - Click "Record Audio"
+   - Say: *"Draw a flower with 5 petals"*
+   - Stop recording
+   - Verify transcription appears
+   - Check drawing generated
+
+4. **Test Error Handling:**
+   - Stop backend
+   - Try to generate a drawing
+   - Verify user-friendly error message appears
+   - Restart backend
+   - Verify recovery
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```bash
+# === REQUIRED ===
+ANTHROPIC_API_KEY=sk-ant-...
+
+# === OPTIONAL ===
+# Voice transcription (Vapi)
+VAPI_API_KEY=your_vapi_key
+
+# Persistent memory across sessions (Letta)
+LETTA_API_KEY=your_letta_key
+
+# Backend port
+PORT=8000
 ```
 
-## How It Works
+### Frontend Configuration
+
+Create `frontend/.env.local` (optional):
+
+```bash
+# Backend URL (default: http://localhost:8000)
+BACKEND_URL=http://localhost:8000
+
+# For production deployment:
+# BACKEND_URL=https://your-backend.com
+```
+
+---
+
+## 🐳 Docker Deployment
+
+### Backend Only
+
+```bash
+cd backend
+docker build -t parametric-drawing-backend .
+docker run -d -p 8000:8000 \
+  -e ANTHROPIC_API_KEY=sk-ant-... \
+  parametric-drawing-backend
+```
+
+### Full Stack (docker-compose)
+
+Create `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - ./backend/static:/app/static
+      - ./backend/exports:/app/exports
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+```
+
+Run:
+```bash
+docker-compose up -d
+```
+
+---
+
+## 🤖 Robot Integration
+
+The system generates **relative motion programs** for physical drawing robots. A complete hardware control implementation is available in the `hardware/` directory.
+
+### How It Works
+
+1. Generate a drawing via `/draw` endpoint
+2. Backend returns `stats.run_id` and exports program to `exports/`
+3. Robot fetches program via `GET /robot/{run_id}`
+4. Robot executes segments sequentially in local coordinates
+
+### Using the Included Robot Plotter
+
+A complete differential drive robot controller is provided in `hardware/`:
+
+```bash
+# Install dependencies (on Raspberry Pi)
+cd hardware
+pip install -r requirements.txt
+
+# Run with a generated drawing
+python robot_plotter.py <run_id>
+
+# Or test in simulation mode
+python robot_plotter.py <run_id> --simulate
+```
+
+**Features:**
+- Accurate differential drive kinematics
+- Synchronized dual stepper motor control (28BYJ-48)
+- Pen up/down handling for color changes
+- Works with or without Raspberry Pi hardware (simulation mode)
+
+See [`hardware/README.md`](hardware/README.md) for complete documentation.
+
+### Custom Robot Integration
+
+```python
+import requests
+import math
+
+# 1. Generate drawing on server
+response = requests.post("http://server:8000/draw",
+                         json={"prompt": "Draw a star"})
+data = response.json()
+run_id = data["stats"]["run_id"]
+
+# 2. On robot: Fetch program
+program = requests.get(f"http://server:8000/robot/{run_id}").json()
+
+# 3. Execute each segment
+for segment in program["relative_program"]["segments"]:
+    if segment["pen"]["color"] == "none":
+        # Pen up - travel move
+        move_without_drawing(segment)
+    else:
+        # Pen down - draw with specified color
+        set_pen_color(segment["pen"]["color"])
+        draw_parametric_curve(
+            x_expr=segment["x_rel"],
+            y_expr=segment["y_rel"],
+            t_min=segment["t_min"],
+            t_max=segment["t_max"]
+        )
+    # Local frame automatically resets to (0,0,0) for next segment
+```
+
+### Pen Colors (Normalized)
+
+All colors are automatically mapped to:
+- `"none"` - Pen up (no drawing)
+- `"#000000"` - Black pen
+- `"#0000FF"` - Blue pen
+
+Perfect for dual-pen robot systems!
+
+---
+
+## 📚 Example Prompts
+
+| Prompt | Complexity | Expected Result |
+|--------|-----------|-----------------|
+| `"Draw a circle"` | ⭐ | Perfect circle |
+| `"Draw a heart shape"` | ⭐⭐ | Symmetric heart |
+| `"Draw a butterfly with symmetric wings"` | ⭐⭐⭐ | Butterfly with mirrored wings |
+| `"Draw a flower with 5 petals"` | ⭐⭐⭐ | 5-petal radial flower |
+| `"Draw a spiral galaxy"` | ⭐⭐⭐⭐ | Logarithmic spiral |
+| `"Draw a Celtic knot"` | ⭐⭐⭐⭐⭐ | Intricate interwoven pattern |
+
+---
+
+## 🐛 Troubleshooting
+
+### Frontend won't connect to backend
+
+**Symptom:** "Failed to generate drawing" error
+
+**Solutions:**
+1. ✅ Check backend is running: `curl http://localhost:8000/health`
+2. ✅ Check `BACKEND_URL` in `frontend/.env.local` (default: `http://localhost:8000`)
+3. ✅ Check CORS in backend logs (should allow all origins in dev)
+4. ✅ Check browser console for network errors
+
+### "ANTHROPIC_API_KEY not found"
+
+**Solution:**
+```bash
+# Check .env file exists in project root
+cat .env
+
+# Should contain:
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Restart backend after adding key
+```
+
+### Port Already in Use
+
+**Symptom:** `Address already in use` error
+
+**Solutions:**
+```bash
+# Find process using port 8000
+lsof -i :8000
+kill -9 <PID>
+
+# Or use different port
+uvicorn app.main:app --port 8001
+```
+
+### Microphone Access Denied
+
+**Solution:**
+1. Check browser permissions (URL bar → lock icon → permissions)
+2. Allow microphone access
+3. Refresh page
+
+### "Module not found" errors
+
+**Backend:**
+```bash
+cd backend
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Frontend:**
+```bash
+cd frontend
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Images not appearing
+
+**Solution:**
+1. Check `backend/static/` directory exists and is writable
+2. Check backend logs for rendering errors
+3. Verify image data in browser DevTools → Network tab
+4. Check console for image loading errors
+
+---
+
+## 🚀 Production Deployment
+
+### Environment Setup
+
+**Backend:**
+- Set `ANTHROPIC_API_KEY` in production environment
+- Use `gunicorn` or `uvicorn` with production settings
+- Configure proper CORS origins (not wildcard)
+- Set up HTTPS with reverse proxy (nginx/Caddy)
+
+**Frontend:**
+- Set `BACKEND_URL` to production backend URL
+- Build with `npm run build`
+- Serve with `npm start` or deploy to Vercel/Netlify
+
+### Recommended Stack
+
+- **Backend:** Railway, Render, Fly.io, or AWS ECS
+- **Frontend:** Vercel, Netlify, or Cloudflare Pages
+- **Storage:** Mount persistent volumes for `static/` and `exports/`
+
+---
+
+## 🎓 How It Works (Under the Hood)
 
 ### Phase 1: Prompt Interpretation
-
-Claude Sonnet 4.5 analyzes the prompt and extracts:
-- Visual components (wings, body, petals, etc.)
+Claude Sonnet 4.5 analyzes your prompt to extract:
+- Visual components (e.g., "wings", "body", "petals")
 - Symmetry type (vertical, horizontal, radial, none)
-- Complexity rating (1-5)
-- Detailed description
+- Complexity rating (1-5 scale)
+- Detailed structural description
 
 ### Phase 2: Equation Generation
-
-Claude generates parametric equations for each component:
-- `x(t)` and `y(t)` expressions
+Claude generates mathematical parametric equations:
+- `x(t)` and `y(t)` expressions using trig functions
 - Parameter range `[t_min, t_max]`
-- Color and styling information
+- Color information
 
-Example for a circle:
+**Example (Circle):**
 ```json
 {
   "name": "circle",
   "x": "cos(t)",
   "y": "sin(t)",
   "t_min": 0,
-  "t_max": 6.283185307179586,
-  "color": "#4169E1"
+  "t_max": 6.283185307179586
 }
 ```
 
 ### Phase 3: Multi-Agent Refinement
+Iterative improvement loop (up to 3 iterations):
 
-1. **Renderer Agent** - Plots equations using Matplotlib
-2. **Evaluator Agent** - Scores the image (0-10) and provides feedback
-3. **Refinement Agent** - Adjusts equations based on feedback
-4. Repeat up to 3 iterations or until score ≥ 9
+1. **Renderer Agent:** Plots equations using Matplotlib
+2. **Evaluator Agent:** Scores image 0-10, provides feedback
+3. **Refinement Agent:** Adjusts equations based on feedback
+4. Repeat until score ≥ 9 or max iterations reached
 
 ### Phase 4: Relative Program Generation
+Transforms absolute curves into robot-ready format:
 
-Transforms absolute parametric curves into a sequence of relative segments for robot execution:
+1. **Compute End Poses:** Calculate (x, y, θ) at end of each curve
+2. **Local Frame Transform:** Express each curve relative to previous end pose
+3. **Pen Control:** Assign normalized colors (`"none"`, `"#000000"`, `"#0000FF"`)
 
-1. **Compute End Poses** - Calculate position and orientation at the end of each curve segment
-2. **Local Frame Transform** - Express each curve relative to the previous segment's end pose
-3. **Pen Control** - Include pen color/state for each segment ("none" means pen up, no drawing)
-
-The robot executes each segment in its own local frame without tracking global position. This approach is ideal for robots without localization systems.
+**Mathematical Transform:**
+```
+[x_rel]   [cos(-θ)  -sin(-θ)] ([x(t)]   [x_prev])
+[y_rel] = [sin(-θ)   cos(-θ)] ([y(t)] - [y_prev])
+```
 
 ### Phase 5: Output
-
-Returns:
-- **Relative Program** (NEW, preferred) - Sequence of curves in local frames with pen control
-- **Absolute Curves** (legacy) - Original global parametric equations for backward compatibility
-- Rendered image (base64 or file path)
-- Evaluation metrics
-- Processing statistics
-
-## Example Prompts
-
-| Prompt | Complexity | Description |
-|--------|-----------|-------------|
-| "Draw a circle" | 1 | Simple geometric shape |
-| "Draw a heart shape" | 2 | Classic symmetric heart |
-| "Draw a butterfly" | 3 | Mirrored wing patterns |
-| "Draw a flower with 5 petals" | 3 | Radial symmetry |
-| "Draw a spiral galaxy" | 4 | Logarithmic spiral |
-| "Draw a Celtic knot" | 5 | Intricate patterns |
-
-## API Configuration
-
-### Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `ANTHROPIC_API_KEY` | Yes | Claude API key from Anthropic |
-| `VAPI_API_KEY` | No | Vapi voice API key (for audio input) |
-| `LETTA_API_KEY` | No | Letta Cloud API key (for persistent memory) |
-| `PORT` | No | Server port (default: 8000) |
-
-## Technical Details
-
-### Parametric Equations
-
-All curves are defined parametrically:
-- **x(t)**: Expression for x-coordinate as a function of parameter t
-- **y(t)**: Expression for y-coordinate as a function of parameter t
-- **t**: Parameter typically ranging from 0 to 2π
-
-Supported functions:
-- Trigonometric: `sin`, `cos`, `tan`
-- Other: `sqrt`, `exp`, `abs`, `log`
-- Constants: `pi`, `e`
-
-### Relative Program Format (NEW)
-
-The `relative_program` field contains a sequence of parametric curve segments expressed in **local coordinate frames**. This format is designed for robots that execute movements relative to their current pose without requiring global localization.
-
-#### Structure
-
-```json
-{
-  "relative_program": {
-    "segments": [
-      {
-        "name": "segment_name",
-        "x_rel": "mathematical expression in t (relative x)",
-        "y_rel": "mathematical expression in t (relative y)",
-        "t_min": 0.0,
-        "t_max": 6.28318531,
-        "pen": {
-          "color": "#FF4500"  // or "none" for pen up
-        }
-      }
-    ]
-  }
-}
-```
-
-#### Mathematical Transformation
-
-Each segment i+1 is expressed relative to the end pose of segment i:
-
-Given absolute curves C_i with (x_i(t), y_i(t)), the system:
-
-1. **Computes end pose** P_i = (x_end, y_end, θ_end) where:
-   - x_end = x_i(t_max)
-   - y_end = y_i(t_max)
-   - θ_end = atan2(y'_i(t_max), x'_i(t_max))
-
-2. **Transforms to local frame** using rotation matrix:
-   ```
-   [x_rel]   [cos(-θ)  -sin(-θ)] ([x(t)]   [x_prev])
-   [y_rel] = [sin(-θ)   cos(-θ)] ([y(t)] - [y_prev])
-   ```
-
-3. **Embeds as string expressions** with numerical constants (8 decimal precision)
-
-#### Robot Execution Model
-
-Robots should execute the relative program as follows:
-
-```python
-# Pseudocode for robot execution
-current_pose = (0, 0, 0)  # Start at origin
-
-for segment in relative_program.segments:
-    if segment.pen.color == "none":
-        # Pen up - move without drawing
-        execute_motion(segment, draw=False)
-    else:
-        # Pen down - draw with specified color
-        set_pen_color(segment.pen.color)
-        execute_motion(segment, draw=True)
-
-    # Robot's local frame automatically becomes (0,0,0)
-    # for the next segment
-```
-
-**Key principle**: The robot does NOT track or maintain global position. Each segment is executed in a fresh local frame that starts at (0, 0, 0).
-
-#### Pen Control
-
-**Automatic Color Normalization:**
-
-All pen colors are automatically normalized to exactly one of three values:
-- **`"none"`** - Pen up (travel move, no drawing)
-- **`"#000000"`** - Black (pen down, drawing)
-- **`"#0000FF"`** - Blue (pen down, drawing)
-
-**Color Mapping:**
-- Any input color is mapped to the nearest of black or blue using RGB distance
-- Example: `#FF0000` (red) → `#000000` (black)
-- Example: `#4169E1` (royal blue) → `#0000FF` (blue)
-- Example: `#00FFFF` (cyan) → `#0000FF` (blue)
-
-**Defaults:**
-- Drawing segments without explicit color: `"#000000"` (black)
-- Travel segments (disconnected curves): `"none"` (pen up)
-- Invalid/missing colors: `"#000000"` (black)
-
-This restriction ensures compatibility with dual-pen robot systems that support only black and blue inks.
-
-### Robot Fetch API
-
-The system provides durable storage and retrieval of robot programs:
-
-#### Flow
-
-1. **POST /draw** generates a drawing and returns:
-   - `stats.run_id`: Unique identifier (32-char hex UUID)
-   - `stats.export_path`: Path to exported JSON file
-   - `relative_program`: Inline program (for immediate use)
-
-2. **Automatic Export**: Each run is saved to `exports/relative_program_{run_id}.json`
-
-3. **GET /robot/{run_id}** retrieves the stored program:
-   - Returns: `{run_id, prompt, relative_program}`
-   - Safe: Path sanitization prevents directory traversal
-   - Cached: 5-second max-age to reduce file I/O
-
-#### Export File Format
-
-```json
-{
-  "run_id": "abc123def456...",
-  "prompt": "Draw a butterfly",
-  "relative_program": {
-    "segments": [...]
-  }
-}
-```
-
-Stored at: `exports/relative_program_{run_id}.json`
-
-#### Robot Integration Example
-
-```python
-import requests
-
-# On server: Generate drawing
-response = requests.post("http://server:8000/draw",
-                         json={"prompt": "Draw a star"})
-run_id = response.json()["stats"]["run_id"]
-
-# On robot (Raspberry Pi): Fetch program
-program = requests.get(f"http://server:8000/robot/{run_id}").json()
-execute_drawing(program["relative_program"])
-```
-
-### Safety
-
-Mathematical expressions are evaluated in a restricted context:
-- Only whitelisted functions allowed
-- No arbitrary code execution
-- Input validation on all endpoints
-
-## Limitations
-
-1. **Visual Evaluation**: Currently uses heuristic-based evaluation. Production would integrate actual vision AI (Claude with vision, GPT-4V).
-
-2. **Voice Input**: Vapi integration requires additional API setup. Text input works out of the box.
-
-3. **Complexity**: Very complex shapes (5/5 complexity) may require manual equation adjustments.
-
-4. **Real-time**: Processing takes 3-10 seconds depending on complexity and number of iterations.
-
-## Future Enhancements
-
-- [ ] Integrate actual vision AI for evaluation (Claude Vision API)
-- [ ] Full Vapi voice transcription implementation
-- [ ] Letta Cloud persistent memory across sessions
-- [ ] Composio tool routing for dynamic workflow
-- [ ] 3D parametric surfaces
-- [ ] Animation support (parametric curves over time)
-- [ ] Desmos graph export
-- [ ] Color gradient support
-- [ ] Interactive web frontend
-
-## Troubleshooting
-
-### API Key Issues
-
-```
-Error: ANTHROPIC_API_KEY environment variable is required
-```
-
-**Solution**: Set your Anthropic API key in the `.env` file or environment.
-
-### Import Errors
-
-```
-ModuleNotFoundError: No module named 'anthropic'
-```
-
-**Solution**: Install dependencies with `pip install -r requirements.txt`
-
-### Port Already in Use
-
-```
-Error: [Errno 48] Address already in use
-```
-
-**Solution**: Change the port with `uvicorn backend.main:app --port 8001`
-
-### Image Not Rendering
-
-**Solution**: Ensure the `static/` directory exists and has write permissions.
-
-## Contributing
-
-This is a hackathon project for Cal Hacks 12.0. Contributions, suggestions, and feedback are welcome!
-
-## Acknowledgments
-
-Built with technologies from Cal Hacks 12.0 sponsors:
-- [Anthropic](https://anthropic.com) - Claude Sonnet 4.5 AI
-- [Vapi](https://vapi.ai) - Voice AI
-- [Letta](https://letta.com) - Persistent memory
-- [Fetch.ai](https://fetch.ai) - Agent framework
-- [Composio](https://composio.dev) - Tool integration
-
-## License
-
-MIT License - See LICENSE file for details
-
-## Contact
-
-For questions or issues, please open an issue on GitHub or contact the development team.
+Returns comprehensive results:
+- Rendered image (base64 PNG with data URI)
+- Relative program (robot-ready segments)
+- Evaluation score and feedback
+- Processing metadata
 
 ---
 
-**Built for Cal Hacks 12.0** 🚀
+## 📖 Additional Resources
+
+- **Backend API Docs:** http://localhost:8000/docs (when running)
+- **Anthropic Claude:** https://www.anthropic.com/claude
+- **Next.js Documentation:** https://nextjs.org/docs
+- **FastAPI Documentation:** https://fastapi.tiangolo.com/
+
+---
+
+## 🙏 Acknowledgments
+
+Built with technologies from **Cal Hacks 12.0** sponsors:
+- [Anthropic](https://anthropic.com) - Claude Sonnet 4.5 AI
+- [Vapi](https://vapi.ai) - Voice-to-text API
+- [Letta](https://letta.com) - Persistent memory
+- [Fetch.ai](https://fetch.ai) - Agent framework concepts
+- [Composio](https://composio.dev) - Tool integration patterns
+
+---
+
+## 📄 License
+
+MIT License - See [LICENSE](LICENSE) file for details
+
+---
+
+## 🤝 Contributing
+
+This is a hackathon project, but contributions, suggestions, and feedback are welcome! Feel free to:
+- Open issues for bugs or feature requests
+- Submit pull requests
+- Share your generated drawings!
+
+---
+
+## 💬 Support
+
+For questions or issues:
+1. Check the [Troubleshooting](#-troubleshooting) section
+2. Review backend logs: `tail -f backend/logs/app.log`
+3. Open an issue on GitHub
+4. Contact the development team
+
+---
+
+**Happy Drawing! 🎨✨**
