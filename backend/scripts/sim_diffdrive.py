@@ -1,8 +1,8 @@
-# scripts/sim_diffdrive.py
+# backend/scripts/sim_diffdrive.py
 # Minimal viewer/simulator for relative_program output.
-# Usage:
-#   python scripts/sim_diffdrive.py --run_id <your_run_id>
-#   (or) python scripts/sim_diffdrive.py --file exports/relative_program_<run_id>.json
+# Usage (from repo root):
+#   python backend/scripts/sim_diffdrive.py --run_id <your_run_id>
+#   (or) python backend/scripts/sim_diffdrive.py --file backend/exports/relative_program_<run_id>.json
 
 import json, math, argparse, sys
 from pathlib import Path
@@ -13,7 +13,7 @@ from matplotlib.animation import FuncAnimation
 def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run_id", type=str, default=None,
-                    help="Run ID (loads exports/relative_program_<run_id>.json)")
+                    help="Run ID (loads backend/exports/relative_program_<run_id>.json)")
     ap.add_argument("--file", type=str, default=None,
                     help="Path to a relative_program_*.json file (overrides --run_id)")
     ap.add_argument("--samples_per_segment", type=int, default=400,
@@ -70,7 +70,10 @@ def main():
         if not args.run_id:
             print("ERROR: Provide --run_id or --file", file=sys.stderr)
             sys.exit(1)
-        path = Path("exports") / f"relative_program_{args.run_id}.json"
+        # Resolve exports directory: backend/scripts/sim_diffdrive.py -> ../exports/
+        script_dir = Path(__file__).resolve().parent
+        exports_dir = script_dir.parent / "exports"
+        path = exports_dir / f"relative_program_{args.run_id}.json"
     if not path.is_file():
         print(f"ERROR: File not found: {path}", file=sys.stderr)
         sys.exit(1)
