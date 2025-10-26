@@ -3,8 +3,10 @@ FastAPI Main Application - Entry point for the Parametric Curve Drawing System A
 """
 
 import os
+import json
 import logging
 import tempfile
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables FIRST before importing any backend modules
@@ -18,6 +20,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from . import pipeline
+from .schemas import DrawResult
 
 # Set up logging
 logging.basicConfig(
@@ -55,20 +58,12 @@ class DrawRequest(BaseModel):
     use_letta: Optional[bool] = False
 
 
-class DrawResponse(BaseModel):
-    """Response model for drawing results."""
-    success: bool
-    prompt: Optional[str] = None
-    description: Optional[dict] = None
-    curves: Optional[dict] = None
-    iterations: Optional[int] = None
-    evaluation_score: Optional[float] = None
-    evaluation_feedback: Optional[str] = None
-    image_path: Optional[str] = None
-    image_base64: Optional[str] = None
-    processing_time: Optional[float] = None
-    session_id: Optional[str] = None
-    error: Optional[str] = None
+class DrawResponse(DrawResult):
+    """
+    Response model for drawing results.
+    Extends DrawResult schema with all fields including relative_program.
+    """
+    pass
 
 
 @app.on_event("startup")
@@ -110,6 +105,7 @@ async def root():
         "endpoints": {
             "POST /draw": "Create a drawing from text prompt",
             "POST /draw/audio": "Create a drawing from audio file",
+            "GET /robot/{run_id}": "Fetch relative program for robot execution",
             "GET /health": "Health check",
             "GET /static/{filename}": "Access generated images"
         },
@@ -286,6 +282,64 @@ async def get_examples():
             }
         ]
     }
+
+
+# Robot Fetch API - constants
+EXPORTS_DIR = Path("exports")
+FILENAME_PREFIX = "relative_program_"
+FILENAME_SUFFIX = ".json"
+
+
+@app.get("/robot/{run_id}", response_class=JSONResponse)
+async def get_robot_program(run_id: str):
+    """
+    Return the precomputed relative motion plan for the robot (by run_id).
+
+    Path-safe, read-only endpoint with no directory traversal.
+    The robot on the Pi can fetch its drawing instructions using the run_id
+    from a previous /draw request.
+
+    Args:
+        run_id: The unique run identifier from the draw response (hex UUID)
+
+    Returns:
+        JSON containing:
+        - run_id: The run identifier
+        - prompt: Original drawing prompt
+        - relative_program: The sequence of relative curve segments
+
+    Raises:
+        400: Invalid run_id format
+        404: Run not found
+        500: Failed to load run data
+    """
+    # Sanitize: allow only hex/uuid-like ids to prevent directory traversal
+    if not run_id or not all(ch in "0123456789abcdefABCDEF-" for ch in run_id):
+        raise HTTPException(status_code=400, detail="Invalid run_id format")
+
+    file_path = EXPORTS_DIR / f"{FILENAME_PREFIX}{run_id}{FILENAME_SUFFIX}"
+
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except json.JSONDecodeError:
+        logger.error(f"Corrupt JSON in {file_path}")
+        raise HTTPException(status_code=500, detail="Corrupt run payload")
+    except Exception as e:
+        logger.error(f"Failed to load run {run_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load run")
+
+    # Ensure minimal required structure
+    if "relative_program" not in data:
+        logger.error(f"Missing relative_program in {file_path}")
+        raise HTTPException(status_code=500, detail="Incomplete run payload")
+
+    # Add light caching to prevent thrashing
+    headers = {"Cache-Control": "private, max-age=5"}
+    return JSONResponse(content=data, headers=headers)
 
 
 # Error handlers

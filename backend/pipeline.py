@@ -4,14 +4,20 @@ This is the main workflow controller that ties together all components.
 """
 
 import os
+import json
 import logging
 import time
+import uuid
+import tempfile
+from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 
 from . import claude_client
 from . import renderer_agent
 from . import evaluator_agent
 from . import memory_manager
+from . import utils_relative
+from .schemas import CurveDef, AbsoluteCurves, RelativeProgram, DrawResult
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -96,9 +102,16 @@ class Pipeline:
                 curves, prompt_text, description
             )
 
-            # Phase 4: Prepare final output
+            # Phase 4: Build relative program
             logger.info("=" * 60)
-            logger.info("PHASE 4: Preparing final output")
+            logger.info("PHASE 4: Building relative program")
+            logger.info("=" * 60)
+
+            relative_program = self._build_relative_program(final_curves)
+
+            # Phase 5: Prepare final output
+            logger.info("=" * 60)
+            logger.info("PHASE 5: Preparing final output")
             logger.info("=" * 60)
 
             self.end_time = time.time()
@@ -107,11 +120,19 @@ class Pipeline:
             # Convert image to base64
             image_base64 = renderer_agent.get_image_as_base64(final_image)
 
+            # Convert final_curves dict to AbsoluteCurves model
+            absolute_curves = AbsoluteCurves(
+                curves=[
+                    CurveDef(**c) for c in final_curves.get('curves', [])
+                ]
+            )
+
             result = {
                 "success": True,
                 "prompt": prompt_text,
                 "description": description,
-                "curves": final_curves,
+                "curves": absolute_curves.dict(),  # Legacy format
+                "relative_program": relative_program.dict(),  # New preferred format
                 "iterations": self.memory.current_state.get("iteration", 0),
                 "evaluation_score": final_score,
                 "evaluation_feedback": final_feedback,
@@ -125,6 +146,7 @@ class Pipeline:
             logger.info(f"Pipeline completed successfully in {processing_time:.2f} seconds")
             logger.info(f"Final score: {final_score}/10")
             logger.info(f"Total iterations: {result['iterations']}")
+            logger.info(f"Relative program segments: {len(relative_program.segments)}")
 
             return result
 
@@ -140,6 +162,73 @@ class Pipeline:
                 "processing_time": round(processing_time, 2),
                 "session_id": self.memory.session_id
             }
+
+    def _build_relative_program(self, curves_dict: Dict[str, Any]) -> RelativeProgram:
+        """
+        Build a relative program from absolute curves.
+
+        Each curve is transformed into the local frame of the previous curve's end pose.
+
+        Args:
+            curves_dict: Dictionary containing a 'curves' list with absolute CurveDef objects
+
+        Returns:
+            RelativeProgram with transformed segments
+        """
+        logger.info("Building relative program from absolute curves...")
+
+        curves = curves_dict.get('curves', [])
+        if not curves:
+            logger.warning("No curves to convert to relative program")
+            return RelativeProgram(segments=[])
+
+        # Convert dict curves to CurveDef objects
+        curve_defs = []
+        for c in curves:
+            curve_def = CurveDef(
+                name=c['name'],
+                x=c['x'],
+                y=c['y'],
+                t_min=c['t_min'],
+                t_max=c['t_max'],
+                color=c.get('color', None)
+            )
+            curve_defs.append(curve_def)
+
+        relative_segments = []
+        current_pose = (0.0, 0.0, 0.0)  # Start pose P_0 = (0, 0, 0)
+
+        for i, curve in enumerate(curve_defs):
+            try:
+                # Transform to relative frame
+                default_color = curve.color if curve.color else "#000000"
+                relative_segment = utils_relative.wrap_to_relative(
+                    prev_pose=current_pose,
+                    curve=curve,
+                    default_color=default_color
+                )
+
+                # Validate the segment
+                if utils_relative.validate_relative_segment(relative_segment):
+                    relative_segments.append(relative_segment)
+                else:
+                    logger.warning(f"Skipping invalid relative segment: {curve.name}")
+                    continue
+
+                # Compute end pose for next iteration
+                end_pose = utils_relative.compute_end_pose(curve)
+                current_pose = end_pose
+
+                logger.info(
+                    f"Added relative segment {i+1}/{len(curve_defs)}: {curve.name}"
+                )
+
+            except Exception as e:
+                logger.error(f"Error processing curve '{curve.name}': {e}")
+                # Continue with remaining curves
+
+        logger.info(f"Built relative program with {len(relative_segments)} segments")
+        return RelativeProgram(segments=relative_segments)
 
     def _refinement_loop(
         self,
@@ -222,10 +311,63 @@ def run_pipeline(prompt_text: str, use_letta: bool = False) -> Dict[str, Any]:
         use_letta: Whether to use Letta Cloud for memory
 
     Returns:
-        Result dictionary
+        Result dictionary with durable export metadata in stats
     """
     pipeline = Pipeline(use_letta=use_letta)
-    return pipeline.run_pipeline(prompt_text)
+    result = pipeline.run_pipeline(prompt_text)
+
+    # --- Durable export of relative_program for robot ---
+    exports_dir = Path("exports")
+    exports_dir.mkdir(parents=True, exist_ok=True)
+
+    run_id = uuid.uuid4().hex  # stable and unique
+
+    # Normalize relative_program for both Pydantic v1/v2 or dict
+    rel_prog = result.get("relative_program")
+    if rel_prog is None:
+        logger.warning("relative_program missing from pipeline result - skipping export")
+        return result
+
+    # Support Pydantic v2 (model_dump), v1 (dict), or plain dict
+    if hasattr(rel_prog, "model_dump"):  # Pydantic v2
+        rel_prog_dict = rel_prog.model_dump()
+    elif hasattr(rel_prog, "dict"):  # Pydantic v1
+        rel_prog_dict = rel_prog.dict()
+    elif isinstance(rel_prog, dict):
+        rel_prog_dict = rel_prog
+    else:
+        logger.error(f"Unsupported relative_program type: {type(rel_prog)}")
+        return result
+
+    payload = {
+        "run_id": run_id,
+        "prompt": prompt_text,
+        "relative_program": rel_prog_dict
+    }
+
+    export_path = exports_dir / f"relative_program_{run_id}.json"
+
+    # Atomic write to avoid partial files
+    try:
+        with tempfile.NamedTemporaryFile("w", delete=False, dir=exports_dir, encoding="utf-8") as tf:
+            json.dump(payload, tf, indent=2)
+            tmp_name = tf.name
+        os.replace(tmp_name, export_path)
+        logger.info(f"Exported relative program to {export_path}")
+    except Exception as e:
+        logger.error(f"Failed to export relative program: {e}")
+        # Continue without crashing - export is supplemental
+        return result
+
+    # Attach run info back to result (preserve existing stats)
+    stats = result.get("stats") or {}
+    stats.update({
+        "run_id": run_id,
+        "export_path": str(export_path)
+    })
+    result["stats"] = stats
+
+    return result
 
 
 def run_pipeline_from_audio(audio_path: str, use_letta: bool = False) -> Dict[str, Any]:

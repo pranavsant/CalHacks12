@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')  # Use non-GUI backend
 import matplotlib.pyplot as plt
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import uuid
 from datetime import datetime
 
@@ -209,6 +209,151 @@ def get_image_as_base64(image_path: str) -> str:
 
     except Exception as e:
         logger.error(f"Error converting image to base64: {e}")
+        raise
+
+
+def render_relative_program(
+    relative_program: Dict[str, Any],
+    output_filename: str = None
+) -> str:
+    """
+    Render a relative program by forward-composing transforms to reconstruct global positions.
+
+    This is primarily for visualization purposes. The robot executes the relative
+    segments directly without reconstructing global positions.
+
+    Args:
+        relative_program: Dictionary or RelativeProgram with 'segments' list
+        output_filename: Optional custom filename (without extension)
+
+    Returns:
+        Path to the saved image file
+    """
+    logger.info("Rendering relative program (reconstructing global coordinates)...")
+
+    # Import here to avoid circular dependency
+    from . import utils_relative
+    from .schemas import RelativeCurveDef
+
+    # Ensure static directory exists
+    os.makedirs(STATIC_DIR, exist_ok=True)
+
+    # Generate unique filename if not provided
+    if output_filename is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_id = str(uuid.uuid4())[:8]
+        output_filename = f"relative_output_{timestamp}_{unique_id}"
+
+    output_path = os.path.join(STATIC_DIR, f"{output_filename}.png")
+
+    try:
+        # Create figure
+        fig, ax = plt.subplots(figsize=(8, 8), dpi=100)
+        ax.set_aspect('equal', adjustable='box')
+
+        # Get segments
+        segments_data = relative_program.get('segments', [])
+        if not segments_data:
+            logger.warning("No segments in relative program")
+            raise ValueError("No segments provided")
+
+        # Convert to RelativeCurveDef objects if needed
+        segments = []
+        for seg in segments_data:
+            if isinstance(seg, dict):
+                from .schemas import PenSpec
+                segments.append(RelativeCurveDef(
+                    name=seg['name'],
+                    x_rel=seg['x_rel'],
+                    y_rel=seg['y_rel'],
+                    t_min=seg['t_min'],
+                    t_max=seg['t_max'],
+                    pen=PenSpec(**seg['pen']) if isinstance(seg['pen'], dict) else seg['pen']
+                ))
+            else:
+                segments.append(seg)
+
+        # Forward-chain through segments to reconstruct global positions
+        current_pose = (0.0, 0.0, 0.0)  # Start at origin
+
+        for i, segment in enumerate(segments):
+            try:
+                # Reconstruct global points from this relative segment
+                x_global, y_global = utils_relative.reconstruct_global_points(
+                    segment, current_pose, num_points=1000
+                )
+
+                # Determine color (skip if pen is up)
+                color = segment.pen.color
+                if color.lower() == "none":
+                    logger.info(f"Skipping segment '{segment.name}' (pen up)")
+                    # Still update pose even if not drawing
+                else:
+                    # Plot this segment
+                    ax.plot(x_global, y_global, color=color, linewidth=2, label=segment.name)
+                    logger.info(f"Plotted relative segment '{segment.name}'")
+
+                # Update current pose for next segment
+                # Evaluate the relative segment at t_max to get local end point
+                t_max = segment.t_max
+                x_local_end = safe_eval_expression(segment.x_rel, t_max)
+                y_local_end = safe_eval_expression(segment.y_rel, t_max)
+
+                # Compute derivative in local frame
+                from .utils_relative import compute_derivative_at_point
+                delta = max(1e-6, 1e-3 * abs(segment.t_max - segment.t_min))
+                x_prime_local = compute_derivative_at_point(segment.x_rel, t_max, delta)
+                y_prime_local = compute_derivative_at_point(segment.y_rel, t_max, delta)
+
+                # Transform local end point and derivative to global
+                x_curr, y_curr, theta_curr = current_pose
+                cos_theta = math.cos(theta_curr)
+                sin_theta = math.sin(theta_curr)
+
+                # End position in global frame
+                x_global_end = cos_theta * x_local_end - sin_theta * y_local_end + x_curr
+                y_global_end = sin_theta * x_local_end + cos_theta * y_local_end + y_curr
+
+                # End derivative in global frame
+                x_prime_global = cos_theta * x_prime_local - sin_theta * y_prime_local
+                y_prime_global = sin_theta * x_prime_local + cos_theta * y_prime_local
+
+                # Compute new theta
+                speed = math.sqrt(x_prime_global**2 + y_prime_global**2)
+                if speed < 1e-9:
+                    theta_new = theta_curr  # Keep previous theta if degenerate
+                else:
+                    theta_new = math.atan2(y_prime_global, x_prime_global)
+
+                current_pose = (x_global_end, y_global_end, theta_new)
+
+            except Exception as e:
+                logger.error(f"Error rendering relative segment {i}: {e}")
+                continue
+
+        # Configure the plot appearance
+        ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
+        ax.set_xlabel('x', fontsize=12)
+        ax.set_ylabel('y', fontsize=12)
+        ax.set_title('Parametric Curve Drawing (from Relative Program)', fontsize=14, fontweight='bold')
+
+        # Add legend if there are multiple segments
+        if len(segments) > 1:
+            ax.legend(loc='best', fontsize=10, framealpha=0.9)
+
+        # Adjust layout
+        plt.tight_layout()
+
+        # Save the figure
+        plt.savefig(output_path, bbox_inches='tight', dpi=100, facecolor='white')
+        plt.close(fig)
+
+        logger.info(f"Successfully saved relative program visualization to {output_path}")
+        return output_path
+
+    except Exception as e:
+        logger.error(f"Error in render_relative_program: {e}")
+        plt.close('all')
         raise
 
 

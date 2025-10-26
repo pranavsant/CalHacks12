@@ -128,8 +128,21 @@ Content-Type: application/json
         "t_min": 0,
         "t_max": 6.283185307179586,
         "color": "#FF4500"
-      },
-      ...
+      }
+    ]
+  },
+  "relative_program": {
+    "segments": [
+      {
+        "name": "left_wing",
+        "x_rel": "1.00000000 * ( (cos(t) + 1) - 0.00000000 ) + 0.00000000 * ( (0.5*sin(2*t)) - 0.00000000 )",
+        "y_rel": "0.00000000 * ( (cos(t) + 1) - 0.00000000 ) + 1.00000000 * ( (0.5*sin(2*t)) - 0.00000000 )",
+        "t_min": 0.0,
+        "t_max": 6.283185307179586,
+        "pen": {
+          "color": "#FF4500"
+        }
+      }
     ]
   },
   "iterations": 2,
@@ -138,6 +151,8 @@ Content-Type: application/json
   "processing_time": 4.2
 }
 ```
+
+> **Note**: The `relative_program` field contains the **preferred output format** for robot execution. Each segment is expressed in the local frame of where the previous segment ended. The robot executes segments sequentially without tracking global position. The `curves` field is maintained for backward compatibility.
 
 #### 2. Create Drawing from Audio
 
@@ -155,7 +170,56 @@ use_letta: false
 GET /examples
 ```
 
-#### 4. Health Check
+#### 4. Fetch Robot Program (NEW)
+
+```bash
+GET /robot/{run_id}
+```
+
+Fetch a previously generated relative motion plan for robot execution. The `run_id` is returned in the `stats` field of the `/draw` response.
+
+**Example:**
+
+```bash
+# Step 1: Generate a drawing and get run_id
+curl -X POST http://localhost:8000/draw \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Draw a butterfly"}'
+
+# Response includes: "stats": {"run_id": "abc123...", "export_path": "exports/relative_program_abc123.json"}
+
+# Step 2: Fetch the program on your robot (e.g., Raspberry Pi)
+curl http://your-server:8000/robot/abc123...
+```
+
+**Response:**
+```json
+{
+  "run_id": "abc123def456...",
+  "prompt": "Draw a butterfly",
+  "relative_program": {
+    "segments": [
+      {
+        "name": "left_wing",
+        "x_rel": "1.00000000 * ( (cos(t) + 1) - 0.00000000 ) + ...",
+        "y_rel": "0.00000000 * ( (cos(t) + 1) - 0.00000000 ) + ...",
+        "t_min": 0.0,
+        "t_max": 6.28318531,
+        "pen": {"color": "#FF4500"}
+      }
+    ]
+  }
+}
+```
+
+**Features:**
+- ✅ Durable storage in `exports/` directory
+- ✅ Path-safe (no directory traversal)
+- ✅ Lightweight caching (5 second max-age)
+- ✅ 404 on missing run_id
+- ✅ 400 on invalid run_id format
+
+#### 5. Health Check
 
 ```bash
 GET /health
@@ -201,20 +265,26 @@ python tests/test_sample_prompt.py "Draw a spiral galaxy"
 CalHacks12/
 ├── backend/
 │   ├── __init__.py
-│   ├── main.py                 # FastAPI application
-│   ├── pipeline.py             # Main orchestrator
-│   ├── claude_client.py        # Claude API integration
-│   ├── vapi_client.py          # Vapi voice transcription
-│   ├── renderer_agent.py       # Matplotlib rendering
-│   ├── evaluator_agent.py      # Image evaluation
-│   └── memory_manager.py       # State management
+│   ├── main.py                    # FastAPI application
+│   ├── pipeline.py                # Main orchestrator
+│   ├── schemas.py                 # Pydantic data models
+│   ├── utils_relative.py          # Relative coordinate transformations
+│   ├── claude_client.py           # Claude API integration
+│   ├── vapi_client.py             # Vapi voice transcription
+│   ├── renderer_agent.py          # Matplotlib rendering (absolute & relative)
+│   ├── evaluator_agent.py         # Image evaluation
+│   └── memory_manager.py          # State management
 ├── tests/
-│   └── test_sample_prompt.py   # Test suite
-├── static/                      # Generated images
-├── requirements.txt             # Python dependencies
-├── Dockerfile                   # Docker configuration
-├── .env.example                 # Environment template
-└── README.md                    # This file
+│   ├── test_sample_prompt.py      # Original test suite
+│   ├── test_relative_chaining.py  # Relative transformation tests
+│   ├── test_pen_color_default.py  # Pen color logic tests
+│   ├── test_degenerate_derivative.py  # Edge case handling tests
+│   └── test_response_schema.py    # Schema validation tests
+├── static/                         # Generated images
+├── requirements.txt                # Python dependencies
+├── Dockerfile                      # Docker configuration
+├── .env.example                    # Environment template
+└── README.md                       # This file
 ```
 
 ## How It Works
@@ -253,10 +323,21 @@ Example for a circle:
 3. **Refinement Agent** - Adjusts equations based on feedback
 4. Repeat up to 3 iterations or until score ≥ 9
 
-### Phase 4: Output
+### Phase 4: Relative Program Generation
+
+Transforms absolute parametric curves into a sequence of relative segments for robot execution:
+
+1. **Compute End Poses** - Calculate position and orientation at the end of each curve segment
+2. **Local Frame Transform** - Express each curve relative to the previous segment's end pose
+3. **Pen Control** - Include pen color/state for each segment ("none" means pen up, no drawing)
+
+The robot executes each segment in its own local frame without tracking global position. This approach is ideal for robots without localization systems.
+
+### Phase 5: Output
 
 Returns:
-- Final parametric equations
+- **Relative Program** (NEW, preferred) - Sequence of curves in local frames with pen control
+- **Absolute Curves** (legacy) - Original global parametric equations for backward compatibility
 - Rendered image (base64 or file path)
 - Evaluation metrics
 - Processing statistics
@@ -296,6 +377,127 @@ Supported functions:
 - Trigonometric: `sin`, `cos`, `tan`
 - Other: `sqrt`, `exp`, `abs`, `log`
 - Constants: `pi`, `e`
+
+### Relative Program Format (NEW)
+
+The `relative_program` field contains a sequence of parametric curve segments expressed in **local coordinate frames**. This format is designed for robots that execute movements relative to their current pose without requiring global localization.
+
+#### Structure
+
+```json
+{
+  "relative_program": {
+    "segments": [
+      {
+        "name": "segment_name",
+        "x_rel": "mathematical expression in t (relative x)",
+        "y_rel": "mathematical expression in t (relative y)",
+        "t_min": 0.0,
+        "t_max": 6.28318531,
+        "pen": {
+          "color": "#FF4500"  // or "none" for pen up
+        }
+      }
+    ]
+  }
+}
+```
+
+#### Mathematical Transformation
+
+Each segment i+1 is expressed relative to the end pose of segment i:
+
+Given absolute curves C_i with (x_i(t), y_i(t)), the system:
+
+1. **Computes end pose** P_i = (x_end, y_end, θ_end) where:
+   - x_end = x_i(t_max)
+   - y_end = y_i(t_max)
+   - θ_end = atan2(y'_i(t_max), x'_i(t_max))
+
+2. **Transforms to local frame** using rotation matrix:
+   ```
+   [x_rel]   [cos(-θ)  -sin(-θ)] ([x(t)]   [x_prev])
+   [y_rel] = [sin(-θ)   cos(-θ)] ([y(t)] - [y_prev])
+   ```
+
+3. **Embeds as string expressions** with numerical constants (8 decimal precision)
+
+#### Robot Execution Model
+
+Robots should execute the relative program as follows:
+
+```python
+# Pseudocode for robot execution
+current_pose = (0, 0, 0)  # Start at origin
+
+for segment in relative_program.segments:
+    if segment.pen.color == "none":
+        # Pen up - move without drawing
+        execute_motion(segment, draw=False)
+    else:
+        # Pen down - draw with specified color
+        set_pen_color(segment.pen.color)
+        execute_motion(segment, draw=True)
+
+    # Robot's local frame automatically becomes (0,0,0)
+    # for the next segment
+```
+
+**Key principle**: The robot does NOT track or maintain global position. Each segment is executed in a fresh local frame that starts at (0, 0, 0).
+
+#### Pen Control
+
+- **`color: "#RRGGBB"`** - Hex color code, pen down
+- **`color: "none"`** - Pen up (travel move, no drawing)
+- Default for drawing segments: `"#000000"` (black)
+- Default for travel segments: `"none"`
+
+### Robot Fetch API
+
+The system provides durable storage and retrieval of robot programs:
+
+#### Flow
+
+1. **POST /draw** generates a drawing and returns:
+   - `stats.run_id`: Unique identifier (32-char hex UUID)
+   - `stats.export_path`: Path to exported JSON file
+   - `relative_program`: Inline program (for immediate use)
+
+2. **Automatic Export**: Each run is saved to `exports/relative_program_{run_id}.json`
+
+3. **GET /robot/{run_id}** retrieves the stored program:
+   - Returns: `{run_id, prompt, relative_program}`
+   - Safe: Path sanitization prevents directory traversal
+   - Cached: 5-second max-age to reduce file I/O
+
+#### Export File Format
+
+```json
+{
+  "run_id": "abc123def456...",
+  "prompt": "Draw a butterfly",
+  "relative_program": {
+    "segments": [...]
+  }
+}
+```
+
+Stored at: `exports/relative_program_{run_id}.json`
+
+#### Robot Integration Example
+
+```python
+import requests
+
+# On server: Generate drawing
+response = requests.post("http://server:8000/draw",
+                         json={"prompt": "Draw a star"})
+run_id = response.json()["stats"]["run_id"]
+
+# On robot (Raspberry Pi): Fetch program
+program = requests.get(f"http://server:8000/robot/{run_id}").json()
+execute_drawing(program["relative_program"])
+```
 
 ### Safety
 

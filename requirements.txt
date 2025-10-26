@@ -2,6 +2,7 @@
 fastapi==0.109.0
 uvicorn[standard]==0.27.0
 python-multipart==0.0.6
+pydantic>=2.0.0
 
 # AI/ML APIs
 anthropic>=0.71.0
@@ -18,6 +19,9 @@ Pillow>=10.3.0
 
 # Environment variables
 python-dotenv==1.0.0
+
+# Testing
+pytest>=8.0.0
 
 # Optional: Letta Cloud integration (if available)
 # letta-client

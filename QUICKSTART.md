@@ -41,10 +41,10 @@ Option B - Direct command:
 ```bash
 uvicorn backend.main:app --reload
 # if uvicorn command is not found (outside PATH), try:
-# python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+# python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
 
 # Could not import module "main"? Try:
-# python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+# python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
 The server will start at `http://localhost:8000`
