@@ -2,7 +2,7 @@
 
 > Transform natural language and voice prompts into mathematical parametric curves and rendered images using AI.
 
-**Built for Cal Hacks 12.0** 🚀
+**Built for Cal Hacks 12.0**
 
 ![Architecture](https://img.shields.io/badge/Frontend-Next.js_16-black?logo=next.js)
 ![Backend](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi)
@@ -10,19 +10,19 @@
 
 ---
 
-## ✨ What It Does
+## What It Does
 
 Describe an image with **text** or **voice**, and watch AI generate it using parametric equations:
 
-- 🎨 **Natural Language to Math** - "Draw a butterfly" → parametric curves
-- 🎤 **Voice Input Support** - Record or upload audio descriptions
-- 🔄 **Iterative Refinement** - AI self-improves drawings through multi-agent evaluation
-- 🤖 **Robot-Ready Output** - Generate programs for physical drawing robots
-- 🖼️ **Beautiful Visualization** - High-quality rendered images
+- **Natural Language to Math** - "Draw a butterfly" → parametric curves
+- **Voice Input Support** - Record or upload audio descriptions
+- **Iterative Refinement** - AI self-improves drawings through multi-agent evaluation
+- **Robot-Ready Output** - Generate programs for physical drawing robots
+- **Beautiful Visualization** - High-quality rendered images
 
 ---
 
-## 🚀 Quick Start (Run the Full Application)
+## Quick Start (Run the Full Application)
 
 ### Prerequisites
 
@@ -142,7 +142,7 @@ CalHacks12/
 
 ---
 
-## 🛠️ Development Setup
+## Development Setup
 
 ### Backend Setup
 
@@ -217,14 +217,14 @@ CalHacks12/
 3. Frontend will automatically connect to backend at `http://localhost:8000`
 
 **Troubleshooting Connection:**
-- ✅ Backend running? Check http://localhost:8000/health
-- ✅ Frontend running? Check http://localhost:3000
-- ✅ CORS enabled? (Backend automatically allows all origins in dev mode)
-- ✅ Ports not in use? Change with `--port` or `PORT` env var
+- Backend running? Check http://localhost:8000/health
+- Frontend running? Check http://localhost:3000
+- CORS enabled? (Backend automatically allows all origins in dev mode)
+- Ports not in use? Change with `--port` or `PORT` env var
 
 ---
 
-## 🎯 How to Use
+## How to Use
 
 ### Text Input
 
@@ -249,7 +249,7 @@ CalHacks12/
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ### System Flow
 
@@ -338,7 +338,7 @@ CalHacks12/
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 ### Frontend → Backend Flow
 
@@ -460,7 +460,7 @@ Check system status.
 
 ---
 
-## 🎨 Understanding the Output
+## Understanding the Output
 
 ### Generated Image
 The AI creates a mathematical drawing rendered as a PNG image, displayed in the frontend.
@@ -543,7 +543,7 @@ npm run lint   # Check for linting issues
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -578,7 +578,7 @@ BACKEND_URL=http://localhost:8000
 
 ---
 
-## 🐳 Docker Deployment
+## Docker Deployment
 
 ### Backend Only
 
@@ -624,7 +624,7 @@ docker-compose up -d
 
 ---
 
-## 🤖 Robot Integration
+## Robot Integration
 
 The system generates **relative motion programs** for physical drawing robots. A complete hardware control implementation is available in the `hardware/` directory.
 
@@ -722,10 +722,10 @@ Perfect for dual-pen robot systems!
 **Symptom:** "Failed to generate drawing" error
 
 **Solutions:**
-1. ✅ Check backend is running: `curl http://localhost:8000/health`
-2. ✅ Check `BACKEND_URL` in `frontend/.env.local` (default: `http://localhost:8000`)
-3. ✅ Check CORS in backend logs (should allow all origins in dev)
-4. ✅ Check browser console for network errors
+1. Check backend is running: `curl http://localhost:8000/health`
+2. Check `BACKEND_URL` in `frontend/.env.local` (default: `http://localhost:8000`)
+3. Check CORS in backend logs (should allow all origins in dev)
+4. Check browser console for network errors
 
 ### "ANTHROPIC_API_KEY not found"
 
@@ -787,7 +787,7 @@ npm install
 
 ---
 
-## 🚀 Production Deployment
+## Production Deployment
 
 ### Environment Setup
 
@@ -866,7 +866,7 @@ Returns comprehensive results:
 
 ---
 
-## 📖 Additional Resources
+## Additional Resources
 
 - **Backend API Docs:** http://localhost:8000/docs (when running)
 - **Anthropic Claude:** https://www.anthropic.com/claude
@@ -875,7 +875,7 @@ Returns comprehensive results:
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Built with technologies from **Cal Hacks 12.0** sponsors:
 - [Anthropic](https://anthropic.com) - Claude Sonnet 4.5 AI
@@ -886,13 +886,13 @@ Built with technologies from **Cal Hacks 12.0** sponsors:
 
 ---
 
-## 📄 License
+## License
 
 MIT License - See [LICENSE](LICENSE) file for details
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 This is a hackathon project, but contributions, suggestions, and feedback are welcome! Feel free to:
 - Open issues for bugs or feature requests
@@ -901,7 +901,7 @@ This is a hackathon project, but contributions, suggestions, and feedback are we
 
 ---
 
-## 💬 Support
+## Support
 
 For questions or issues:
 1. Check the [Troubleshooting](#-troubleshooting) section
@@ -909,6 +909,3 @@ For questions or issues:
 3. Open an issue on GitHub
 4. Contact the development team
 
----
-
-**Happy Drawing! 🎨✨**
